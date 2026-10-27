@@ -69,18 +69,18 @@ export class CalendarComponent {
     const prevMonthDays = new Date(year, month, 0).getDate();
     for (let i = firstDay - 1; i >= 0; i--) {
       const day = prevMonthDays - i;
-      const dateStr = this.datePipe.transform(new Date(year, month - 1, day), 'yyyy-MM-dd');
+      const dateStr = this.datePipe.transform(new Date(year, month - 1, day), 'yyyy-MM-dd')!;
       cells.push({ dayNum: day, dateStr, isCurrentMonth: false, isToday: dateStr === todayStr });
     }
     // Current month
     for (let i = 1; i <= totalDays; i++) {
-      const dateStr = this.datePipe.transform(new Date(year, month, i), 'yyyy-MM-dd');
+      const dateStr = this.datePipe.transform(new Date(year, month, i), 'yyyy-MM-dd')!;
       cells.push({ dayNum: i, dateStr, isCurrentMonth: true, isToday: dateStr === todayStr });
     }
     // Next month padding
     const remaining = 35 - cells.length;
     for (let i = 1; i <= (remaining > 0 ? remaining : 42 - cells.length); i++) {
-      const dateStr = this.datePipe.transform(new Date(year, month + 1, i), 'yyyy-MM-dd');
+      const dateStr = this.datePipe.transform(new Date(year, month + 1, i), 'yyyy-MM-dd')!;
       cells.push({ dayNum: i, dateStr, isCurrentMonth: false, isToday: dateStr === todayStr });
     }
     return cells;
