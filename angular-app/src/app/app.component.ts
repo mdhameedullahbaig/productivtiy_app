@@ -24,20 +24,34 @@ import { QuickAddModalComponent } from './components/quick-add-modal.component';
   ],
   template: `
     <div class="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans">
-      <app-navigation (openQuickAdd)="showModal.set(true)" />
+      <app-navigation (openQuickAdd)="onOpenAddEvent()" />
 
       <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <app-dashboard *ngIf="service.currentTab() === 'dashboard'" />
-        <app-calendar *ngIf="service.currentTab() === 'calendar'" (openAddEvent)="showModal.set(true)" />
-        <app-reminders *ngIf="service.currentTab() === 'reminders'" (openAddReminder)="showModal.set(true)" />
-        <app-quick-breaks *ngIf="service.currentTab() === 'breaks'" />
-        <app-quotes *ngIf="service.currentTab() === 'quotes'" />
+        @switch (service.currentTab()) {
+          @case ('dashboard') {
+            <app-dashboard />
+          }
+          @case ('calendar') {
+            <app-calendar (openAddEvent)="onOpenAddEvent($event)" />
+          }
+          @case ('reminders') {
+            <app-reminders (openAddReminder)="onOpenAddEvent()" />
+          }
+          @case ('breaks') {
+            <app-quick-breaks />
+          }
+          @case ('quotes') {
+            <app-quotes />
+          }
+        }
       </main>
 
-      <app-quick-add-modal *ngIf="showModal()" (close)="showModal.set(false)" />
+      @if (showModal()) {
+        <app-quick-add-modal [initialDate]="modalInitialDate()" (close)="showModal.set(false)" />
+      }
 
       <footer class="border-t border-slate-200 bg-white py-6 mt-12 text-center text-xs text-slate-500 font-mono">
-        Chronos Productivity Suite (Angular 19 Standalone Architecture)
+        Chronos Productivity Suite (Angular Standalone Architecture)
       </footer>
     </div>
   `
@@ -45,4 +59,14 @@ import { QuickAddModalComponent } from './components/quick-add-modal.component';
 export class AppComponent {
   service = inject(ProductivityService);
   showModal = signal(false);
+  modalInitialDate = signal<string>(new Date().toISOString().split('T')[0]);
+
+  onOpenAddEvent(date?: string | void) {
+    if (typeof date === 'string' && date) {
+      this.modalInitialDate.set(date);
+    } else {
+      this.modalInitialDate.set(new Date().toISOString().split('T')[0]);
+    }
+    this.showModal.set(true);
+  }
 }

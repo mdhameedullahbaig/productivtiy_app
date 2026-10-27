@@ -57,3 +57,25 @@ export interface DailyStats {
 }
 
 export type ViewTab = 'dashboard' | 'calendar' | 'reminders' | 'breaks' | 'quotes';
+
+export interface FreeTimeSlot {
+  startTime: string; // HH:mm
+  endTime: string;   // HH:mm
+  durationMinutes: number;
+  durationFormatted: string;
+  isFocusBlock: boolean; // >= 90 mins
+}
+
+export interface FreeTimeSummary {
+  dateStr: string;
+  totalBusyMinutes: number;
+  totalFreeMinutesWorkday: number; // 8:00 - 20:00 (720 min active window)
+  freePercentageWorkday: number;
+  totalFreeMinutes24h: number; // 1440 min
+  busyFormatted: string;
+  freeWorkdayFormatted: string;
+  free24hFormatted: string;
+  freeSlots: FreeTimeSlot[];
+  status: 'open' | 'moderate' | 'busy';
+  statusLabel: string;
+}

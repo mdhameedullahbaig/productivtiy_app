@@ -1,4 +1,4 @@
-import { Component, inject, output, signal } from '@angular/core';
+import { Component, inject, output, signal, input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProductivityService } from '../services/productivity.service';
@@ -107,9 +107,11 @@ import { Priority, EventCategory, ReminderCategory, EventFrequency } from '../mo
     </div>
   `
 })
-export class QuickAddModalComponent {
+export class QuickAddModalComponent implements OnInit {
   service = inject(ProductivityService);
   close = output<void>();
+
+  initialDate = input<string>(new Date().toISOString().split('T')[0]);
 
   tab = signal<'reminder' | 'event'>('reminder');
 
@@ -124,6 +126,13 @@ export class QuickAddModalComponent {
   evtFrequency: EventFrequency = 'none';
   evtCategory: EventCategory = 'deep-work';
   evtPriority: Priority = 'medium';
+
+  ngOnInit() {
+    if (this.initialDate()) {
+      this.remDate = this.initialDate();
+      this.evtDate = this.initialDate();
+    }
+  }
 
   saveReminder() {
     if (!this.remTitle.trim()) return;

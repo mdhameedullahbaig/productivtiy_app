@@ -1,5 +1,5 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
-import { CalendarEvent, Reminder, DailyStats, Quote, ViewTab } from '../models/productivity.models';
+import { CalendarEvent, Reminder, DailyStats, Quote, ViewTab, FreeTimeSummary, FreeTimeSlot } from '../models/productivity.models';
 import { DatabaseService } from './database.service';
 
 const INITIAL_QUOTES: Quote[] = [
@@ -218,6 +218,153 @@ export class ProductivityService {
     }
 
     return event.startDate === targetDateStr;
+  }
+
+  /**
+   * Computes comprehensive free time analysis for a given date,
+   * factoring in regular and recurring events.
+   */
+  getFreeTimeSummary(dateStr: string): FreeTimeSummary {
+    const dayEvents = this.events().filter(e => this.isEventOnDate(e, dateStr));
+
+    const parseTimeToMinutes = (t: string): number => {
+      if (!t) return 0;
+      const parts = t.split(':');
+      const h = parseInt(parts[0], 10) || 0;
+      const m = parseInt(parts[1], 10) || 0;
+      return h * 60 + m;
+    };
+
+    const formatMinutesToHuman = (mins: number): string => {
+      if (mins <= 0) return '0m';
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      if (h === 0) return `${m}m`;
+      if (m === 0) return `${h}h`;
+      return `${h}h ${m}m`;
+    };
+
+    const minutesToTimeString = (mins: number): string => {
+      const clamped = Math.max(0, Math.min(1439, mins));
+      const h = Math.floor(clamped / 60);
+      const m = clamped % 60;
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    };
+
+    // Build raw intervals
+    const rawIntervals: { start: number; end: number }[] = [];
+    for (const evt of dayEvents) {
+      const s = parseTimeToMinutes(evt.startTime);
+      let e = parseTimeToMinutes(evt.endTime);
+      if (e <= s) e = Math.min(1440, s + 60);
+      rawIntervals.push({ start: s, end: e });
+    }
+
+    // Sort by start
+    rawIntervals.sort((a, b) => a.start - b.start);
+
+    // Merge overlapping intervals
+    const merged: { start: number; end: number }[] = [];
+    for (const interval of rawIntervals) {
+      if (merged.length === 0) {
+        merged.push({ ...interval });
+      } else {
+        const last = merged[merged.length - 1];
+        if (interval.start <= last.end) {
+          last.end = Math.max(last.end, interval.end);
+        } else {
+          merged.push({ ...interval });
+        }
+      }
+    }
+
+    // Total busy across 24h
+    let totalBusyMinutes = 0;
+    for (const m of merged) {
+      totalBusyMinutes += (m.end - m.start);
+    }
+    const totalFreeMinutes24h = Math.max(0, 1440 - totalBusyMinutes);
+
+    // Active workday window: 05:00 (300 min) to 22:00 (1320 min) = 1020 minutes
+    const WORKDAY_START = 300; // 05:00
+    const WORKDAY_END = 1320;  // 22:00
+    const WORKDAY_TOTAL = WORKDAY_END - WORKDAY_START;
+
+    const workdayBusyIntervals: { start: number; end: number }[] = [];
+    for (const m of merged) {
+      const startClamped = Math.max(WORKDAY_START, Math.min(WORKDAY_END, m.start));
+      const endClamped = Math.max(WORKDAY_START, Math.min(WORKDAY_END, m.end));
+      if (endClamped > startClamped) {
+        workdayBusyIntervals.push({ start: startClamped, end: endClamped });
+      }
+    }
+
+    let busyWorkdayMinutes = 0;
+    for (const w of workdayBusyIntervals) {
+      busyWorkdayMinutes += (w.end - w.start);
+    }
+    const totalFreeMinutesWorkday = Math.max(0, WORKDAY_TOTAL - busyWorkdayMinutes);
+    const freePercentageWorkday = Math.round((totalFreeMinutesWorkday / WORKDAY_TOTAL) * 100);
+
+    // Calculate free slots in the active workday window
+    const freeSlots: FreeTimeSlot[] = [];
+    let cursor = WORKDAY_START;
+
+    for (const b of workdayBusyIntervals) {
+      if (b.start > cursor) {
+        const dur = b.start - cursor;
+        if (dur >= 15) {
+          freeSlots.push({
+            startTime: minutesToTimeString(cursor),
+            endTime: minutesToTimeString(b.start),
+            durationMinutes: dur,
+            durationFormatted: formatMinutesToHuman(dur),
+            isFocusBlock: dur >= 90
+          });
+        }
+      }
+      cursor = Math.max(cursor, b.end);
+    }
+
+    if (cursor < WORKDAY_END) {
+      const dur = WORKDAY_END - cursor;
+      if (dur >= 15) {
+        freeSlots.push({
+          startTime: minutesToTimeString(cursor),
+          endTime: minutesToTimeString(WORKDAY_END),
+          durationMinutes: dur,
+          durationFormatted: formatMinutesToHuman(dur),
+          isFocusBlock: dur >= 90
+        });
+      }
+    }
+
+    let status: 'open' | 'moderate' | 'busy' = 'open';
+    let statusLabel = 'High Availability';
+    if (freePercentageWorkday >= 65) {
+      status = 'open';
+      statusLabel = dayEvents.length === 0 ? 'Completely Open' : 'High Availability';
+    } else if (freePercentageWorkday >= 30) {
+      status = 'moderate';
+      statusLabel = 'Moderate Schedule';
+    } else {
+      status = 'busy';
+      statusLabel = 'Heavily Booked';
+    }
+
+    return {
+      dateStr,
+      totalBusyMinutes,
+      totalFreeMinutesWorkday,
+      freePercentageWorkday,
+      totalFreeMinutes24h,
+      busyFormatted: formatMinutesToHuman(totalBusyMinutes),
+      freeWorkdayFormatted: formatMinutesToHuman(totalFreeMinutesWorkday),
+      free24hFormatted: formatMinutesToHuman(totalFreeMinutes24h),
+      freeSlots,
+      status,
+      statusLabel
+    };
   }
 
   // Reminders management (Dynamic DB backed)

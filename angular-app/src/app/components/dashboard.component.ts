@@ -10,7 +10,7 @@ import { AudioService } from '../services/audio.service';
   template: `
     <div class="space-y-6">
       <!-- Welcome header -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
         <div>
           <span class="text-xs font-semibold text-indigo-600 uppercase tracking-wider font-mono">
             {{ todayFormatted }}
@@ -18,6 +18,19 @@ import { AudioService } from '../services/audio.service';
           <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 mt-0.5">
             Daily Focus & Execution Center
           </h1>
+        </div>
+
+        <div class="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2.5">
+          <div class="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow-2xs">
+            ⚡
+          </div>
+          <div>
+            <div class="text-[10px] font-mono text-emerald-800 uppercase font-semibold">Today's Free Time</div>
+            <div class="text-sm font-bold text-emerald-950 font-mono">
+              {{ todaySummary().freeWorkdayFormatted }} Free
+              <span class="text-xs font-normal text-emerald-700">({{ todaySummary().freePercentageWorkday }}% open)</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -118,7 +131,12 @@ import { AudioService } from '../services/audio.service';
         <!-- Events column -->
         <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
           <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-            <h3 class="text-sm font-bold text-slate-900">Today's Events</h3>
+            <div class="flex items-center gap-2">
+              <h3 class="text-sm font-bold text-slate-900">Today's Events</h3>
+              <span class="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-800 border-emerald-200">
+                {{ todaySummary().freeWorkdayFormatted }} Free
+              </span>
+            </div>
             <button (click)="service.setTab('calendar')" class="text-xs text-indigo-600 hover:underline">
               View Calendar →
             </button>
@@ -224,6 +242,7 @@ export class DashboardComponent {
   todayDateStr = new Date().toISOString().split('T')[0];
 
   todayEvents = computed(() => this.service.events().filter(e => this.service.isEventOnDate(e, this.todayDateStr)));
+  todaySummary = computed(() => this.service.getFreeTimeSummary(this.todayDateStr));
   todayReminders = computed(() => this.service.reminders().filter(r => r.dueDate === this.todayDateStr));
 
   isCopied = signal(false);
