@@ -17,25 +17,40 @@ import { Quote } from '../models/productivity.models';
 
       <!-- Spotlight Quote -->
       <div class="bg-slate-900 text-white rounded-2xl p-8 shadow-lg space-y-4">
-        <div class="text-xs font-mono text-indigo-400">DAILY WISDOM · {{ service.quoteOfTheDay().category }}</div>
+        <div class="flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-indigo-400">
+          <span>DAILY WISDOM · {{ service.quoteOfTheDay().category }}</span>
+          <span class="text-slate-300 bg-white/10 px-2 py-0.5 rounded text-[11px]">
+            Rotates in {{ service.quoteCountdownFormatted() }}
+          </span>
+        </div>
         <blockquote class="text-xl font-medium leading-relaxed">
           "{{ service.quoteOfTheDay().text }}"
         </blockquote>
         <div class="text-sm font-semibold text-slate-300 font-mono">
           — {{ service.quoteOfTheDay().author }}
         </div>
-        <div class="pt-2 flex gap-2">
+        <div class="pt-2 flex flex-wrap items-center justify-between gap-2">
+          <div class="flex gap-2">
+            <button
+              (click)="listen(service.quoteOfTheDay())"
+              class="px-3 py-1.5 text-xs bg-white/10 hover:bg-white/20 rounded-lg text-white font-mono cursor-pointer"
+            >
+              🔊 Listen Aloud
+            </button>
+            <button
+              (click)="copy(service.quoteOfTheDay())"
+              class="px-3 py-1.5 text-xs bg-white/10 hover:bg-white/20 rounded-lg text-white font-mono cursor-pointer"
+            >
+              📋 Copy Quote
+            </button>
+          </div>
+
           <button
-            (click)="listen(service.quoteOfTheDay())"
-            class="px-3 py-1.5 text-xs bg-white/10 hover:bg-white/20 rounded-lg text-white font-mono cursor-pointer"
+            (click)="service.rotateQuote()"
+            class="px-3.5 py-1.5 text-xs bg-white text-slate-900 hover:bg-slate-100 rounded-lg font-mono cursor-pointer font-medium"
+            title="Rotate to next quote"
           >
-            🔊 Listen Aloud
-          </button>
-          <button
-            (click)="copy(service.quoteOfTheDay())"
-            class="px-3 py-1.5 text-xs bg-white/10 hover:bg-white/20 rounded-lg text-white font-mono cursor-pointer"
-          >
-            📋 Copy Quote
+            ↻ Next Quote
           </button>
         </div>
       </div>

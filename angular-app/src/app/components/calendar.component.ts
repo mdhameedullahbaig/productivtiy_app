@@ -185,7 +185,7 @@ export class CalendarComponent {
   }
 
   getEventsForDate(dateStr: string): CalendarEvent[] {
-    return this.service.events().filter(e => e.startDate === dateStr);
+    return this.service.events().filter(e => this.service.isEventOnDate(e, dateStr));
   }
 
   selectedEvent = signal<CalendarEvent | null>(null);

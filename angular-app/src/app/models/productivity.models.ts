@@ -8,6 +8,8 @@ export type EventCategory =
   | 'personal'
   | 'review';
 
+export type EventFrequency = 'none' | 'daily' | 'weekly' | 'monthly';
+
 export interface CalendarEvent {
   id: string;
   title: string;
@@ -18,6 +20,7 @@ export interface CalendarEvent {
   category: EventCategory;
   priority: Priority;
   locationOrLink?: string;
+  frequency?: EventFrequency;
 }
 
 export type ReminderCategory = 'work' | 'personal' | 'health' | 'finance' | 'learning';

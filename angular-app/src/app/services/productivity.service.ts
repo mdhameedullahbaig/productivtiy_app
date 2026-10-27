@@ -1,6 +1,6 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { CalendarEvent, Reminder, DailyStats, Quote, ViewTab } from '../models/productivity.models';
-import { DatabaseService } from '../services/database.service';
+import { DatabaseService } from './database.service';
 
 const INITIAL_QUOTES: Quote[] = [
   {
@@ -59,21 +59,60 @@ export class ProductivityService {
   currentTab = signal<ViewTab>('dashboard');
   isDbConnected = signal<boolean>(true);
 
+  // 5-minute quote rotation state (300 seconds)
+  currentQuoteIndex = signal<number>(0);
+  quoteRotationSecondsLeft = signal<number>(300);
+  private quoteTimerInterval: any = null;
+
   // Computed signals
   unreadRemindersCount = computed(() => this.reminders().filter(r => !r.completed).length);
+
   quoteOfTheDay = computed(() => {
     const qList = this.quotes();
-    const today = new Date().toISOString().split('T')[0];
-    let hash = 0;
-    for (let i = 0; i < today.length; i++) {
-      hash = (hash << 5) - hash + today.charCodeAt(i);
-      hash |= 0;
-    }
-    return qList[Math.abs(hash) % qList.length] || INITIAL_QUOTES[0];
+    if (!qList || qList.length === 0) return INITIAL_QUOTES[0];
+    const idx = Math.abs(this.currentQuoteIndex()) % qList.length;
+    return qList[idx] || qList[0];
+  });
+
+  quoteCountdownFormatted = computed(() => {
+    const totalSecs = this.quoteRotationSecondsLeft();
+    const mins = Math.floor(totalSecs / 60);
+    const secs = totalSecs % 60;
+    return `${mins}:${String(secs).padStart(2, '0')}`;
   });
 
   constructor() {
     this.hydrateFromDatabase();
+    this.startQuoteRotationTimer();
+  }
+
+  /**
+   * Automatically rotates quote every 5 minutes (300 seconds)
+   */
+  startQuoteRotationTimer() {
+    if (typeof window === 'undefined') return;
+    if (this.quoteTimerInterval) {
+      clearInterval(this.quoteTimerInterval);
+    }
+
+    this.quoteTimerInterval = setInterval(() => {
+      if (this.quoteRotationSecondsLeft() > 1) {
+        this.quoteRotationSecondsLeft.update(s => s - 1);
+      } else {
+        this.rotateQuote();
+      }
+    }, 1000);
+  }
+
+  /**
+   * Rotates to the next quote and resets the 5-minute countdown
+   */
+  rotateQuote() {
+    const qList = this.quotes();
+    if (qList.length > 1) {
+      this.currentQuoteIndex.update(idx => (idx + 1) % qList.length);
+    }
+    this.quoteRotationSecondsLeft.set(300);
   }
 
   /**
@@ -146,6 +185,39 @@ export class ProductivityService {
     this.events.update(list => list.filter(e => e.id !== id));
     this.saveToStorage(this.STORAGE_EVENTS, this.events());
     await this.db.deleteEvent(id);
+  }
+
+  /**
+   * Evaluates if an event takes place on targetDateStr (YYYY-MM-DD),
+   * considering frequency recurrence ('none', 'daily', 'weekly', 'monthly').
+   */
+  isEventOnDate(event: CalendarEvent, targetDateStr: string): boolean {
+    if (!event.startDate) return false;
+    // An event cannot occur before its scheduled start date
+    if (targetDateStr < event.startDate) return false;
+
+    const freq = event.frequency || 'none';
+    if (freq === 'none') {
+      return event.startDate === targetDateStr;
+    }
+
+    if (freq === 'daily') {
+      return true;
+    }
+
+    if (freq === 'weekly') {
+      const startD = new Date(event.startDate + 'T00:00:00');
+      const targetD = new Date(targetDateStr + 'T00:00:00');
+      return startD.getDay() === targetD.getDay();
+    }
+
+    if (freq === 'monthly') {
+      const startDayNum = parseInt(event.startDate.split('-')[2], 10);
+      const targetDayNum = parseInt(targetDateStr.split('-')[2], 10);
+      return startDayNum === targetDayNum;
+    }
+
+    return event.startDate === targetDateStr;
   }
 
   // Reminders management (Dynamic DB backed)
@@ -276,7 +348,8 @@ export class ProductivityService {
         startTime: '09:00',
         endTime: '11:00',
         category: 'deep-work',
-        priority: 'high'
+        priority: 'high',
+        frequency: 'daily'
       },
       {
         id: 'evt-2',
@@ -285,7 +358,8 @@ export class ProductivityService {
         startTime: '14:00',
         endTime: '14:45',
         category: 'meeting',
-        priority: 'medium'
+        priority: 'medium',
+        frequency: 'weekly'
       }
     ];
   }
