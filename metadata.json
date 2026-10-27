@@ -1,0 +1,6 @@
+{
+  "name": "Chronos Productivity Suite",
+  "description": "Full-featured productivity workspace with interactive calendar, event planner, task & reminder manager, smart break reminders, and daily motivational quotes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
