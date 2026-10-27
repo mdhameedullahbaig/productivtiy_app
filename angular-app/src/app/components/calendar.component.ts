@@ -64,11 +64,63 @@ import { CalendarEvent, EventCategory } from '../models/productivity.models';
             <div class="space-y-1">
               <div
                 *ngFor="let evt of getEventsForDate(cell.dateStr)"
-                class="text-[11px] px-1.5 py-0.5 rounded border border-indigo-200 bg-indigo-50 text-indigo-700 truncate"
+                (click)="selectEvent(evt, $event)"
+                class="text-[11px] px-1.5 py-1 rounded border border-indigo-200 bg-indigo-50 text-indigo-700 flex items-center justify-between group hover:bg-indigo-100 transition-colors"
+                title="Click to view details or delete"
               >
-                <span class="font-mono">{{ evt.startTime }}</span> {{ evt.title }}
+                <div class="truncate mr-1">
+                  <span class="font-mono font-medium">{{ evt.startTime }}</span> {{ evt.title }}
+                </div>
+                <button
+                  type="button"
+                  (click)="deleteEvent(evt.id, $event)"
+                  class="opacity-0 group-hover:opacity-100 text-rose-600 hover:text-rose-800 hover:bg-rose-100 px-1 py-0.5 rounded cursor-pointer shrink-0 transition-opacity font-bold"
+                  title="Delete event"
+                >
+                  ✕
+                </button>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Event Detail & Delete Modal -->
+      <div *ngIf="selectedEvent()" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+        <div class="w-full max-w-md bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden animate-in fade-in">
+          <div class="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+            <span class="text-xs font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
+              {{ selectedEvent()?.category }}
+            </span>
+            <button (click)="selectedEvent.set(null)" class="text-slate-400 hover:text-slate-600 p-1">✕</button>
+          </div>
+          <div class="p-6 space-y-3">
+            <h3 class="text-base font-bold text-slate-900">{{ selectedEvent()?.title }}</h3>
+            <div class="text-xs text-slate-600 font-mono">
+              📅 {{ selectedEvent()?.startDate }} · {{ selectedEvent()?.startTime }} - {{ selectedEvent()?.endTime }}
+            </div>
+            <p *ngIf="selectedEvent()?.description" class="text-xs text-slate-600 pt-2 border-t border-slate-100 leading-relaxed">
+              {{ selectedEvent()?.description }}
+            </p>
+            <div *ngIf="selectedEvent()?.locationOrLink" class="text-xs text-slate-500">
+              📍 {{ selectedEvent()?.locationOrLink }}
+            </div>
+          </div>
+          <div class="p-4 bg-slate-50 border-t border-slate-200 flex justify-between items-center">
+            <button
+              type="button"
+              (click)="deleteSelectedEvent()"
+              class="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
+            >
+              <span>🗑 Delete Event</span>
+            </button>
+            <button
+              type="button"
+              (click)="selectedEvent.set(null)"
+              class="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+            >
+              Close
+            </button>
           </div>
         </div>
       </div>
@@ -134,6 +186,29 @@ export class CalendarComponent {
 
   getEventsForDate(dateStr: string): CalendarEvent[] {
     return this.service.events().filter(e => e.startDate === dateStr);
+  }
+
+  selectedEvent = signal<CalendarEvent | null>(null);
+
+  selectEvent(evt: CalendarEvent, $event: Event) {
+    $event.stopPropagation();
+    this.selectedEvent.set(evt);
+  }
+
+  deleteEvent(id: string, $event: Event) {
+    $event.stopPropagation();
+    this.service.deleteEvent(id);
+    if (this.selectedEvent()?.id === id) {
+      this.selectedEvent.set(null);
+    }
+  }
+
+  deleteSelectedEvent() {
+    const evt = this.selectedEvent();
+    if (evt) {
+      this.service.deleteEvent(evt.id);
+      this.selectedEvent.set(null);
+    }
   }
 
   selectDate(dateStr: string) {

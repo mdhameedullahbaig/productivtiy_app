@@ -1,70 +1,79 @@
 package com.chronos.productivity.controller;
 
+import com.chronos.productivity.entity.CalendarEventEntity;
+import com.chronos.productivity.entity.ReminderEntity;
+import com.chronos.productivity.repository.CalendarEventRepository;
+import com.chronos.productivity.repository.ReminderRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.*;
+import java.time.Instant;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api")
 @CrossOrigin(origins = {"http://localhost:4200", "http://localhost:3000"})
 public class ProductivityController {
 
-    // In-memory synchronized store (backed by MySQL JPA repositories in production)
-    private final List<Map<String, Object>> events = Collections.synchronizedList(new ArrayList<>());
-    private final List<Map<String, Object>> reminders = Collections.synchronizedList(new ArrayList<>());
+    @Autowired
+    private CalendarEventRepository eventRepository;
 
-    // --- Events Endpoints ---
+    @Autowired
+    private ReminderRepository reminderRepository;
+
+    // --- Events Database Endpoints ---
+
     @GetMapping("/events")
-    public ResponseEntity<List<Map<String, Object>>> getEvents() {
-        return ResponseEntity.ok(events);
+    public ResponseEntity<List<CalendarEventEntity>> getEvents() {
+        return ResponseEntity.ok(eventRepository.findAll());
     }
 
     @PostMapping("/events")
-    public ResponseEntity<Map<String, Object>> createEvent(@RequestBody Map<String, Object> event) {
-        if (!event.containsKey("id")) {
-            event.put("id", "evt-" + System.currentTimeMillis());
+    public ResponseEntity<CalendarEventEntity> createEvent(@RequestBody CalendarEventEntity event) {
+        if (event.getId() == null || event.getId().isBlank()) {
+            event.setId("evt-" + System.currentTimeMillis());
         }
-        events.add(0, event);
-        return ResponseEntity.ok(event);
+        CalendarEventEntity saved = eventRepository.save(event);
+        return ResponseEntity.ok(saved);
     }
 
     @DeleteMapping("/events/{id}")
     public ResponseEntity<Void> deleteEvent(@PathVariable String id) {
-        events.removeIf(e -> id.equals(e.get("id")));
+        eventRepository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 
-    // --- Reminders Endpoints ---
+    // --- Reminders Database Endpoints ---
+
     @GetMapping("/reminders")
-    public ResponseEntity<List<Map<String, Object>>> getReminders() {
-        return ResponseEntity.ok(reminders);
+    public ResponseEntity<List<ReminderEntity>> getReminders() {
+        return ResponseEntity.ok(reminderRepository.findAll());
     }
 
     @PostMapping("/reminders")
-    public ResponseEntity<Map<String, Object>> createReminder(@RequestBody Map<String, Object> reminder) {
-        if (!reminder.containsKey("id")) {
-            reminder.put("id", "rem-" + System.currentTimeMillis());
+    public ResponseEntity<ReminderEntity> createReminder(@RequestBody ReminderEntity reminder) {
+        if (reminder.getId() == null || reminder.getId().isBlank()) {
+            reminder.setId("rem-" + System.currentTimeMillis());
         }
-        reminders.add(0, reminder);
-        return ResponseEntity.ok(reminder);
+        ReminderEntity saved = reminderRepository.save(reminder);
+        return ResponseEntity.ok(saved);
     }
 
     @PatchMapping("/reminders/{id}/toggle")
-    public ResponseEntity<Map<String, Object>> toggleReminder(@PathVariable String id) {
-        for (Map<String, Object> r : reminders) {
-            if (id.equals(r.get("id"))) {
-                boolean completed = Boolean.TRUE.equals(r.get("completed"));
-                r.put("completed", !completed);
-                return ResponseEntity.ok(r);
-            }
-        }
-        return ResponseEntity.notFound().build();
+    public ResponseEntity<ReminderEntity> toggleReminder(@PathVariable String id) {
+        return reminderRepository.findById(id).map(reminder -> {
+            boolean nextState = !reminder.isCompleted();
+            reminder.setCompleted(nextState);
+            reminder.setCompletedAt(nextState ? Instant.now().toString() : null);
+            ReminderEntity updated = reminderRepository.save(reminder);
+            return ResponseEntity.ok(updated);
+        }).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/reminders/{id}")
     public ResponseEntity<Void> deleteReminder(@PathVariable String id) {
-        reminders.removeIf(r -> id.equals(r.get("id")));
+        reminderRepository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 }

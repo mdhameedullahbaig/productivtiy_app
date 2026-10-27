@@ -87,11 +87,12 @@ import { Reminder } from '../models/productivity.models';
               +1h
             </button>
             <button
+              type="button"
               (click)="delete(rem.id)"
-              class="p-1 text-slate-400 hover:text-rose-600"
-              title="Delete"
+              class="px-2.5 py-1 text-xs font-medium text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
+              title="Delete reminder"
             >
-              ✕
+              <span>🗑 Delete</span>
             </button>
           </div>
         </div>

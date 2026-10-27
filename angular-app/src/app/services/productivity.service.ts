@@ -1,5 +1,6 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, inject } from '@angular/core';
 import { CalendarEvent, Reminder, DailyStats, Quote, ViewTab } from '../models/productivity.models';
+import { DatabaseService } from '../services/database.service';
 
 const INITIAL_QUOTES: Quote[] = [
   {
@@ -43,17 +44,20 @@ const INITIAL_QUOTES: Quote[] = [
   providedIn: 'root'
 })
 export class ProductivityService {
+  private db = inject(DatabaseService);
+
   private readonly STORAGE_EVENTS = 'chronos_angular_events';
   private readonly STORAGE_REMINDERS = 'chronos_angular_reminders';
   private readonly STORAGE_STATS = 'chronos_angular_stats';
   private readonly STORAGE_QUOTES = 'chronos_angular_quotes';
 
-  // Signals
-  events = signal<CalendarEvent[]>(this.loadEvents());
-  reminders = signal<Reminder[]>(this.loadReminders());
-  stats = signal<DailyStats>(this.loadStats());
-  quotes = signal<Quote[]>(this.loadQuotes());
+  // Reactive state signals
+  events = signal<CalendarEvent[]>(this.loadInitialEvents());
+  reminders = signal<Reminder[]>(this.loadInitialReminders());
+  stats = signal<DailyStats>(this.loadInitialStats());
+  quotes = signal<Quote[]>(this.loadInitialQuotes());
   currentTab = signal<ViewTab>('dashboard');
+  isDbConnected = signal<boolean>(true);
 
   // Computed signals
   unreadRemindersCount = computed(() => this.reminders().filter(r => !r.completed).length);
@@ -68,33 +72,92 @@ export class ProductivityService {
     return qList[Math.abs(hash) % qList.length] || INITIAL_QUOTES[0];
   });
 
-  constructor() {}
+  constructor() {
+    this.hydrateFromDatabase();
+  }
+
+  /**
+   * Asynchronously hydrate state from IndexedDB database and seed if empty
+   */
+  async hydrateFromDatabase() {
+    try {
+      const [dbEvents, dbReminders, dbQuotes] = await Promise.all([
+        this.db.getAllEvents(),
+        this.db.getAllReminders(),
+        this.db.getAllQuotes(),
+      ]);
+
+      if (dbEvents && dbEvents.length > 0) {
+        this.events.set(dbEvents);
+      } else {
+        // Seed database with initial events
+        for (const evt of this.events()) {
+          await this.db.saveEvent(evt);
+        }
+      }
+
+      if (dbReminders && dbReminders.length > 0) {
+        this.reminders.set(dbReminders);
+      } else {
+        // Seed database with initial reminders
+        for (const rem of this.reminders()) {
+          await this.db.saveReminder(rem);
+        }
+      }
+
+      if (dbQuotes && dbQuotes.length > 0) {
+        this.quotes.set(dbQuotes);
+      } else {
+        // Seed database with initial quotes
+        for (const q of this.quotes()) {
+          await this.db.saveQuote(q);
+        }
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+      const dbStats = await this.db.getDailyStats(today);
+      if (dbStats) {
+        this.stats.set(dbStats);
+      } else {
+        await this.db.saveDailyStats(this.stats());
+      }
+
+      // Check remote REST / MySQL backend sync in background
+      this.db.syncWithBackend().catch(() => {});
+    } catch {
+      // Fallback stays active
+    }
+  }
 
   // Tab navigation
   setTab(tab: ViewTab) {
     this.currentTab.set(tab);
   }
 
-  // Events management
-  addEvent(event: Omit<CalendarEvent, 'id'>) {
+  // Events management (Dynamic DB backed)
+  async addEvent(event: Omit<CalendarEvent, 'id'>) {
     const newEvent: CalendarEvent = { ...event, id: `evt-${Date.now()}` };
     this.events.update(list => [newEvent, ...list]);
     this.saveToStorage(this.STORAGE_EVENTS, this.events());
+    await this.db.saveEvent(newEvent);
   }
 
-  deleteEvent(id: string) {
+  async deleteEvent(id: string) {
     this.events.update(list => list.filter(e => e.id !== id));
     this.saveToStorage(this.STORAGE_EVENTS, this.events());
+    await this.db.deleteEvent(id);
   }
 
-  // Reminders management
-  addReminder(reminder: Omit<Reminder, 'id'>) {
+  // Reminders management (Dynamic DB backed)
+  async addReminder(reminder: Omit<Reminder, 'id'>) {
     const newRem: Reminder = { ...reminder, id: `rem-${Date.now()}` };
     this.reminders.update(list => [newRem, ...list]);
     this.saveToStorage(this.STORAGE_REMINDERS, this.reminders());
+    await this.db.saveReminder(newRem);
   }
 
-  toggleReminder(id: string) {
+  async toggleReminder(id: string) {
+    let updatedReminder: Reminder | null = null;
     this.reminders.update(list =>
       list.map(r => {
         if (r.id === id) {
@@ -104,75 +167,105 @@ export class ProductivityService {
             remindersCompletedToday: nextCompleted ? st.remindersCompletedToday + 1 : Math.max(0, st.remindersCompletedToday - 1)
           }));
           this.saveToStorage(this.STORAGE_STATS, this.stats());
-          return {
+          this.db.saveDailyStats(this.stats());
+
+          updatedReminder = {
             ...r,
             completed: nextCompleted,
             completedAt: nextCompleted ? new Date().toISOString() : undefined
           };
+          return updatedReminder;
         }
         return r;
       })
     );
     this.saveToStorage(this.STORAGE_REMINDERS, this.reminders());
+    if (updatedReminder) {
+      await this.db.saveReminder(updatedReminder);
+    }
   }
 
-  deleteReminder(id: string) {
+  async deleteReminder(id: string) {
     this.reminders.update(list => list.filter(r => r.id !== id));
     this.saveToStorage(this.STORAGE_REMINDERS, this.reminders());
+    await this.db.deleteReminder(id);
   }
 
-  snoozeReminder(id: string, minutes: number) {
+  async snoozeReminder(id: string, minutes: number) {
+    let snoozedItem: Reminder | null = null;
     this.reminders.update(list =>
       list.map(r => {
         if (r.id === id) {
           if (minutes === 1440) {
             const d = new Date();
             d.setDate(d.getDate() + 1);
-            return { ...r, dueDate: d.toISOString().split('T')[0], snoozedUntil: 'Tomorrow' };
+            snoozedItem = { ...r, dueDate: d.toISOString().split('T')[0], snoozedUntil: 'Tomorrow' };
+            return snoozedItem;
           }
           const now = new Date();
           now.setMinutes(now.getMinutes() + minutes);
           const hh = String(now.getHours()).padStart(2, '0');
           const mm = String(now.getMinutes()).padStart(2, '0');
-          return { ...r, dueTime: `${hh}:${mm}`, snoozedUntil: `${hh}:${mm}` };
+          snoozedItem = { ...r, dueTime: `${hh}:${mm}`, snoozedUntil: `${hh}:${mm}` };
+          return snoozedItem;
         }
         return r;
       })
     );
     this.saveToStorage(this.STORAGE_REMINDERS, this.reminders());
+    if (snoozedItem) {
+      await this.db.saveReminder(snoozedItem);
+    }
   }
 
-  // Breaks and Stats
-  logBreak(minutes: number) {
+  // Breaks and Stats (Dynamic DB backed)
+  async logBreak(minutes: number) {
     this.stats.update(st => ({
       ...st,
       breaksCompletedToday: st.breaksCompletedToday + 1,
       focusMinutesToday: st.focusMinutesToday + minutes
     }));
     this.saveToStorage(this.STORAGE_STATS, this.stats());
+    await this.db.saveDailyStats(this.stats());
   }
 
-  logHydration() {
+  async logHydration() {
     this.stats.update(st => ({ ...st, waterGlasses: st.waterGlasses + 1 }));
     this.saveToStorage(this.STORAGE_STATS, this.stats());
+    await this.db.saveDailyStats(this.stats());
   }
 
-  // Quotes
-  toggleFavoriteQuote(id: string) {
-    this.quotes.update(list => list.map(q => q.id === id ? { ...q, favorite: !q.favorite } : q));
+  // Quotes (Dynamic DB backed)
+  async toggleFavoriteQuote(id: string) {
+    let favQuote: Quote | null = null;
+    this.quotes.update(list =>
+      list.map(q => {
+        if (q.id === id) {
+          favQuote = { ...q, favorite: !q.favorite };
+          return favQuote;
+        }
+        return q;
+      })
+    );
     this.saveToStorage(this.STORAGE_QUOTES, this.quotes());
+    if (favQuote) {
+      await this.db.saveQuote(favQuote);
+    }
   }
 
-  addCustomQuote(quote: Omit<Quote, 'id'>) {
+  async addCustomQuote(quote: Omit<Quote, 'id'>) {
     const newQuote: Quote = { ...quote, id: `q-${Date.now()}` };
     this.quotes.update(list => [newQuote, ...list]);
     this.saveToStorage(this.STORAGE_QUOTES, this.quotes());
+    await this.db.saveQuote(newQuote);
   }
 
-  // Private storage loaders
-  private loadEvents(): CalendarEvent[] {
-    const raw = localStorage.getItem(this.STORAGE_EVENTS);
-    if (raw) return JSON.parse(raw);
+  // Initial fallbacks
+  private loadInitialEvents(): CalendarEvent[] {
+    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(this.STORAGE_EVENTS) : null;
+    if (raw) {
+      try { return JSON.parse(raw); } catch {}
+    }
     const today = new Date().toISOString().split('T')[0];
     return [
       {
@@ -197,9 +290,11 @@ export class ProductivityService {
     ];
   }
 
-  private loadReminders(): Reminder[] {
-    const raw = localStorage.getItem(this.STORAGE_REMINDERS);
-    if (raw) return JSON.parse(raw);
+  private loadInitialReminders(): Reminder[] {
+    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(this.STORAGE_REMINDERS) : null;
+    if (raw) {
+      try { return JSON.parse(raw); } catch {}
+    }
     const today = new Date().toISOString().split('T')[0];
     return [
       {
@@ -223,9 +318,11 @@ export class ProductivityService {
     ];
   }
 
-  private loadStats(): DailyStats {
-    const raw = localStorage.getItem(this.STORAGE_STATS);
-    if (raw) return JSON.parse(raw);
+  private loadInitialStats(): DailyStats {
+    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(this.STORAGE_STATS) : null;
+    if (raw) {
+      try { return JSON.parse(raw); } catch {}
+    }
     return {
       focusMinutesToday: 85,
       breaksCompletedToday: 3,
@@ -236,14 +333,19 @@ export class ProductivityService {
     };
   }
 
-  private loadQuotes(): Quote[] {
-    const raw = localStorage.getItem(this.STORAGE_QUOTES);
-    return raw ? JSON.parse(raw) : INITIAL_QUOTES;
+  private loadInitialQuotes(): Quote[] {
+    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(this.STORAGE_QUOTES) : null;
+    if (raw) {
+      try { return JSON.parse(raw); } catch {}
+    }
+    return INITIAL_QUOTES;
   }
 
   private saveToStorage(key: string, data: unknown) {
     try {
-      localStorage.setItem(key, JSON.stringify(data));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(key, JSON.stringify(data));
+      }
     } catch (e) {
       console.error(e);
     }

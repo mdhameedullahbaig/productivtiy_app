@@ -7,7 +7,7 @@ import { AudioService } from '../services/audio.service';
   selector: 'app-dashboard',
   standalone: true,
   imports: [CommonModule],
-  templateUrl: './dashboard.component.html'
+  templateUrl: "./dashboard.component.html"
 })
 export class DashboardComponent {
   service = inject(ProductivityService);
@@ -42,5 +42,13 @@ export class DashboardComponent {
   toggleReminder(id: string) {
     this.audio.playSuccessChime();
     this.service.toggleReminder(id);
+  }
+
+  deleteEvent(id: string) {
+    this.service.deleteEvent(id);
+  }
+
+  deleteReminder(id: string) {
+    this.service.deleteReminder(id);
   }
 }
