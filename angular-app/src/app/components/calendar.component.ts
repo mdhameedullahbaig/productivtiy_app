@@ -198,4 +198,15 @@ export class CalendarComponent {
       this.selectedEvent.set(null);
     }
   }
+
+  isNextEvent(evt: CalendarEvent): boolean {
+    return this.service.nextEvent()?.event?.id === evt.id;
+  }
+
+  getCurrentTimeLeftPercent(): number | null {
+    const now = this.service.currentTime();
+    const mins = now.getHours() * 60 + now.getMinutes();
+    if (mins < 300 || mins > 1320) return null;
+    return Math.round(((mins - 300) / 1020) * 1000) / 10;
+  }
 }

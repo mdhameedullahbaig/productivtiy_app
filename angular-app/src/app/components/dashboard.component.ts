@@ -126,6 +126,108 @@ import { AudioService } from '../services/audio.service';
         </div>
       </div>
 
+      <!-- Next Event Spotlight Card (High Visibility) -->
+      @if (service.nextEvent(); as next) {
+        <section
+          class="relative overflow-hidden rounded-2xl border-2 p-5 sm:p-6 shadow-sm transition-all duration-300"
+          [class]="next.isHappeningNow 
+            ? 'bg-gradient-to-br from-emerald-50 via-teal-50/60 to-white border-emerald-400 ring-4 ring-emerald-100/70' 
+            : (next.urgency === 'imminent' 
+                ? 'bg-gradient-to-br from-amber-50/90 via-orange-50/40 to-white border-amber-400 ring-4 ring-amber-100/70' 
+                : 'bg-gradient-to-br from-indigo-50/90 via-purple-50/40 to-white border-indigo-400 ring-4 ring-indigo-100/60')"
+        >
+          <!-- Decorative accent blur -->
+          <div
+            class="absolute -right-8 -bottom-8 w-44 h-44 rounded-full blur-2xl pointer-events-none opacity-40"
+            [class]="next.isHappeningNow ? 'bg-emerald-300' : (next.urgency === 'imminent' ? 'bg-amber-300' : 'bg-indigo-300')"
+          ></div>
+
+          <div class="relative flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <!-- Left Info -->
+            <div class="space-y-2.5">
+              <div class="flex items-center gap-2.5 flex-wrap">
+                <!-- Pulsing attention pill -->
+                <span
+                  class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold font-mono tracking-wider shadow-xs uppercase"
+                  [class]="next.isHappeningNow 
+                    ? 'bg-emerald-600 text-white' 
+                    : (next.urgency === 'imminent' ? 'bg-amber-600 text-white' : 'bg-indigo-600 text-white')"
+                >
+                  <span class="relative flex h-2 w-2">
+                    <span
+                      class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-80"
+                      [class]="next.isHappeningNow ? 'bg-emerald-200' : (next.urgency === 'imminent' ? 'bg-amber-200' : 'bg-indigo-200')"
+                    ></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                  </span>
+                  <span>{{ next.isHappeningNow ? '● In Progress Now' : '⚡ Next Event Up' }}</span>
+                </span>
+
+                <!-- Live countdown badge -->
+                <span
+                  class="px-2.5 py-1 text-xs font-mono font-bold rounded-lg border shadow-2xs flex items-center gap-1"
+                  [class]="next.isHappeningNow 
+                    ? 'bg-emerald-100 text-emerald-950 border-emerald-300' 
+                    : (next.urgency === 'imminent' 
+                        ? 'bg-amber-100 text-amber-950 border-amber-300 animate-pulse' 
+                        : 'bg-indigo-100 text-indigo-950 border-indigo-200')"
+                >
+                  <span>⏳</span>
+                  <span>{{ next.timeUntilFormatted }}</span>
+                </span>
+
+                <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full border bg-white/90 text-slate-700 border-slate-200 shadow-2xs capitalize">
+                  {{ next.event.category }}
+                </span>
+
+                @if (next.event.frequency && next.event.frequency !== 'none') {
+                  <span class="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-md bg-purple-100 text-purple-800 border border-purple-200">
+                    🔁 {{ next.event.frequency }}
+                  </span>
+                }
+              </div>
+
+              <!-- Title & time -->
+              <div>
+                <h2 class="text-lg sm:text-xl font-bold tracking-tight text-slate-950">
+                  {{ next.event.title }}
+                </h2>
+                <div class="flex items-center gap-3 text-xs text-slate-600 font-mono mt-1 flex-wrap">
+                  <span class="font-bold text-slate-900">🕒 {{ next.event.startTime }} – {{ next.event.endTime }}</span>
+                  @if (next.event.startDate) {
+                    <span>·</span>
+                    <span>📅 {{ next.event.startDate }}</span>
+                  }
+                  @if (next.event.locationOrLink) {
+                    <span>·</span>
+                    <span class="truncate max-w-xs">📍 {{ next.event.locationOrLink }}</span>
+                  }
+                </div>
+                @if (next.event.description) {
+                  <p class="text-xs text-slate-600 mt-1.5 max-w-2xl line-clamp-2 leading-relaxed">
+                    {{ next.event.description }}
+                  </p>
+                }
+              </div>
+            </div>
+
+            <!-- Action Button -->
+            <div class="flex items-center gap-2 self-start md:self-center shrink-0">
+              <button
+                type="button"
+                (click)="service.setTab('calendar')"
+                class="px-4 py-2.5 text-xs font-semibold rounded-xl text-white shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                [class]="next.isHappeningNow 
+                  ? 'bg-emerald-600 hover:bg-emerald-700' 
+                  : (next.urgency === 'imminent' ? 'bg-amber-600 hover:bg-amber-700' : 'bg-indigo-600 hover:bg-indigo-700')"
+              >
+                <span>View on Calendar →</span>
+              </button>
+            </div>
+          </div>
+        </section>
+      }
+
       <!-- 2 Columns: Scheduled Events & Active Reminders -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Events column -->
@@ -137,69 +239,109 @@ import { AudioService } from '../services/audio.service';
                 {{ todaySummary().freeWorkdayFormatted }} Free
               </span>
             </div>
-            <button (click)="service.setTab('calendar')" class="text-xs text-indigo-600 hover:underline">
+            <button (click)="service.setTab('calendar')" class="text-xs text-indigo-600 hover:underline cursor-pointer">
               View Calendar →
             </button>
           </div>
-          <div *ngIf="todayEvents().length === 0" class="py-6 text-center text-xs text-slate-400">
-            No events scheduled today.
-          </div>
-          <div *ngFor="let evt of todayEvents()" class="p-3 rounded-lg border border-slate-200 bg-slate-50/60 flex items-center justify-between gap-3">
-            <div class="min-w-0">
-              <div class="flex items-center gap-2 flex-wrap">
-                <span class="text-xs font-semibold text-slate-900 truncate">{{ evt.title }}</span>
-                <span class="text-[11px] font-mono tabular-nums text-slate-500 shrink-0">{{ evt.startTime }} - {{ evt.endTime }}</span>
-                <span
-                  *ngIf="evt.frequency && evt.frequency !== 'none'"
-                  class="text-[10px] bg-indigo-100 text-indigo-700 font-mono px-1.5 py-0.5 rounded font-semibold uppercase shrink-0"
-                >
-                  🔁 {{ evt.frequency }}
-                </span>
-              </div>
-              <div class="text-[11px] text-slate-400 font-mono mt-0.5">{{ evt.category }}</div>
+
+          @if (todayEvents().length === 0) {
+            <div class="py-6 text-center text-xs text-slate-400">
+              No events scheduled today.
             </div>
-            <button
-              type="button"
-              (click)="deleteEvent(evt.id)"
-              class="text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2 py-1 rounded text-xs transition-colors cursor-pointer shrink-0 font-medium"
-              title="Delete event"
-            >
-              🗑 Delete
-            </button>
-          </div>
+          } @else {
+            <div class="space-y-2.5">
+              @for (evt of todayEvents(); track evt.id) {
+                <div
+                  class="p-3.5 rounded-xl border transition-all flex items-center justify-between gap-3 shadow-2xs"
+                  [class]="isNextEvent(evt.id) 
+                    ? 'border-2 border-indigo-500 bg-indigo-50/80 ring-2 ring-indigo-200 shadow-xs' 
+                    : 'border-slate-200 bg-slate-50/60 hover:bg-slate-50'"
+                >
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <span class="text-xs font-semibold text-slate-900 truncate">{{ evt.title }}</span>
+                      
+                      <!-- Next Up attention badge -->
+                      @if (isNextEvent(evt.id)) {
+                        <span class="text-[10px] bg-indigo-600 text-white font-bold font-mono px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shrink-0 shadow-xs">
+                          <span class="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
+                          <span>Next Up</span>
+                        </span>
+                      }
+
+                      <span
+                        class="text-[11px] font-mono tabular-nums shrink-0"
+                        [class]="isNextEvent(evt.id) ? 'font-bold text-indigo-700' : 'text-slate-500'"
+                      >
+                        {{ evt.startTime }} - {{ evt.endTime }}
+                      </span>
+
+                      @if (evt.frequency && evt.frequency !== 'none') {
+                        <span class="text-[10px] bg-purple-100 text-purple-800 font-mono px-1.5 py-0.5 rounded font-semibold uppercase shrink-0">
+                          🔁 {{ evt.frequency }}
+                        </span>
+                      }
+                    </div>
+                    <div class="text-[11px] text-slate-400 font-mono mt-0.5">{{ evt.category }}</div>
+                  </div>
+
+                  <button
+                    type="button"
+                    (click)="deleteEvent(evt.id)"
+                    class="text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2 py-1 rounded text-xs transition-colors cursor-pointer shrink-0 font-medium"
+                    title="Delete event"
+                  >
+                    🗑 Delete
+                  </button>
+                </div>
+              }
+            </div>
+          }
         </div>
 
         <!-- Reminders column -->
         <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
           <div class="flex items-center justify-between pb-3 border-b border-slate-100">
             <h3 class="text-sm font-bold text-slate-900">Active Reminders</h3>
-            <button (click)="service.setTab('reminders')" class="text-xs text-indigo-600 hover:underline">
+            <button (click)="service.setTab('reminders')" class="text-xs text-indigo-600 hover:underline cursor-pointer">
               All Reminders →
             </button>
           </div>
-          <div *ngIf="todayReminders().length === 0" class="py-6 text-center text-xs text-slate-400">
-            No reminders due today.
-          </div>
-          <div *ngFor="let rem of todayReminders()" class="p-3 rounded-lg border border-slate-200 flex items-center justify-between gap-3">
-            <div class="flex items-center gap-2 min-w-0">
-              <button (click)="toggleReminder(rem.id)" class="text-slate-400 hover:text-indigo-600 cursor-pointer shrink-0">
-                <span *ngIf="rem.completed" class="text-emerald-600 font-bold">✓</span>
-                <span *ngIf="!rem.completed">○</span>
-              </button>
-              <div class="min-w-0">
-                <span class="text-xs font-medium block truncate" [class.line-through]="rem.completed">{{ rem.title }}</span>
-                <span *ngIf="rem.dueTime" class="text-[10px] font-mono text-slate-400">Due {{ rem.dueTime }}</span>
-              </div>
+          @if (todayReminders().length === 0) {
+            <div class="py-6 text-center text-xs text-slate-400">
+              No reminders due today.
             </div>
-            <button
-              type="button"
-              (click)="deleteReminder(rem.id)"
-              class="text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2 py-1 rounded text-xs transition-colors cursor-pointer shrink-0 font-medium"
-              title="Delete reminder"
-            >
-              🗑 Delete
-            </button>
-          </div>
+          } @else {
+            <div class="space-y-2">
+              @for (rem of todayReminders(); track rem.id) {
+                <div class="p-3 rounded-lg border border-slate-200 flex items-center justify-between gap-3 bg-white">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <button (click)="toggleReminder(rem.id)" class="text-slate-400 hover:text-indigo-600 cursor-pointer shrink-0">
+                      @if (rem.completed) {
+                        <span class="text-emerald-600 font-bold">✓</span>
+                      } @else {
+                        <span>○</span>
+                      }
+                    </button>
+                    <div class="min-w-0">
+                      <span class="text-xs font-medium block truncate" [class.line-through]="rem.completed">{{ rem.title }}</span>
+                      @if (rem.dueTime) {
+                        <span class="text-[10px] font-mono text-slate-400">Due {{ rem.dueTime }}</span>
+                      }
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    (click)="deleteReminder(rem.id)"
+                    class="text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2 py-1 rounded text-xs transition-colors cursor-pointer shrink-0 font-medium"
+                    title="Delete reminder"
+                  >
+                    🗑 Delete
+                  </button>
+                </div>
+              }
+            </div>
+          }
         </div>
       </div>
 
@@ -270,5 +412,9 @@ export class DashboardComponent {
 
   deleteReminder(id: string) {
     this.service.deleteReminder(id);
+  }
+
+  isNextEvent(evtId: string): boolean {
+    return this.service.nextEvent()?.event?.id === evtId;
   }
 }

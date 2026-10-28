@@ -1,5 +1,5 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
-import { CalendarEvent, Reminder, DailyStats, Quote, ViewTab, FreeTimeSummary, FreeTimeSlot } from '../models/productivity.models';
+import { CalendarEvent, Reminder, DailyStats, Quote, ViewTab, FreeTimeSummary, FreeTimeSlot, NextEventInfo } from '../models/productivity.models';
 import { DatabaseService } from './database.service';
 
 const INITIAL_QUOTES: Quote[] = [
@@ -81,9 +81,31 @@ export class ProductivityService {
     return `${mins}:${String(secs).padStart(2, '0')}`;
   });
 
+  // Live clock & next event tracking
+  currentTime = signal<Date>(new Date());
+  private clockInterval: any = null;
+
+  nextEvent = computed<NextEventInfo | null>(() => {
+    return this.computeNextEvent();
+  });
+
   constructor() {
     this.hydrateFromDatabase();
     this.startQuoteRotationTimer();
+    this.startClockTimer();
+  }
+
+  /**
+   * Keep current time reactive for live event countdowns & next event tracking
+   */
+  startClockTimer() {
+    if (typeof window === 'undefined') return;
+    if (this.clockInterval) {
+      clearInterval(this.clockInterval);
+    }
+    this.clockInterval = setInterval(() => {
+      this.currentTime.set(new Date());
+    }, 10000);
   }
 
   /**
@@ -218,6 +240,109 @@ export class ProductivityService {
     }
 
     return event.startDate === targetDateStr;
+  }
+
+  parseTimeToMinutes(t: string): number {
+    if (!t) return 0;
+    const parts = t.split(':');
+    const h = parseInt(parts[0], 10) || 0;
+    const m = parseInt(parts[1], 10) || 0;
+    return h * 60 + m;
+  }
+
+  getLocalDateString(d: Date = new Date()): string {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  /**
+   * Identifies and computes the immediate next event (or current in-progress event)
+   * to spotlight across dashboard and calendar views.
+   */
+  computeNextEvent(): NextEventInfo | null {
+    const allEvents = this.events();
+    if (!allEvents || allEvents.length === 0) return null;
+
+    const now = this.currentTime();
+    const todayStr = this.getLocalDateString(now);
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+    // 1. Check today's events first
+    const todayEvents = allEvents
+      .filter(e => this.isEventOnDate(e, todayStr))
+      .sort((a, b) => this.parseTimeToMinutes(a.startTime) - this.parseTimeToMinutes(b.startTime));
+
+    // Check if an event is happening right now
+    for (const evt of todayEvents) {
+      const startMin = this.parseTimeToMinutes(evt.startTime);
+      let endMin = this.parseTimeToMinutes(evt.endTime);
+      if (endMin <= startMin) endMin = Math.min(1440, startMin + 60);
+
+      if (startMin <= nowMinutes && nowMinutes < endMin) {
+        const remaining = Math.max(1, endMin - nowMinutes);
+        return {
+          event: evt,
+          isHappeningNow: true,
+          minutesUntilStart: 0,
+          minutesRemaining: remaining,
+          urgency: 'now',
+          timeUntilFormatted: `Happening now · Ends in ${remaining}m`,
+          countdownFormatted: `${remaining}m left`,
+          statusLabel: 'Active Now'
+        };
+      }
+    }
+
+    // Check if there is an upcoming event today
+    for (const evt of todayEvents) {
+      const startMin = this.parseTimeToMinutes(evt.startTime);
+      if (startMin > nowMinutes) {
+        const diff = startMin - nowMinutes;
+        const urgency = diff <= 30 ? 'imminent' : 'today';
+        const countdown = diff < 60 ? `${diff}m` : `${Math.floor(diff / 60)}h ${diff % 60}m`;
+        return {
+          event: evt,
+          isHappeningNow: false,
+          minutesUntilStart: diff,
+          urgency,
+          timeUntilFormatted: diff < 60 ? `Starts in ${diff} min` : `Starts in ${Math.floor(diff / 60)}h ${diff % 60}m (${evt.startTime})`,
+          countdownFormatted: `in ${countdown}`,
+          statusLabel: diff <= 30 ? 'Starting Soon' : 'Next Up Today'
+        };
+      }
+    }
+
+    // 2. Check future days (up to 30 days ahead)
+    for (let dayOffset = 1; dayOffset <= 30; dayOffset++) {
+      const futureD = new Date(now);
+      futureD.setDate(now.getDate() + dayOffset);
+      const futureStr = this.getLocalDateString(futureD);
+      const futureEvents = allEvents
+        .filter(e => this.isEventOnDate(e, futureStr))
+        .sort((a, b) => this.parseTimeToMinutes(a.startTime) - this.parseTimeToMinutes(b.startTime));
+
+      if (futureEvents.length > 0) {
+        const evt = futureEvents[0];
+        const dayLabel = dayOffset === 1
+          ? 'Tomorrow'
+          : (dayOffset < 7
+              ? futureD.toLocaleDateString('en-US', { weekday: 'long' })
+              : futureD.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+        return {
+          event: evt,
+          isHappeningNow: false,
+          minutesUntilStart: dayOffset * 1440,
+          urgency: 'upcoming',
+          timeUntilFormatted: `${dayLabel} at ${evt.startTime}`,
+          countdownFormatted: dayOffset === 1 ? 'Tomorrow' : `in ${dayOffset}d`,
+          statusLabel: 'Upcoming Event'
+        };
+      }
+    }
+
+    return null;
   }
 
   /**

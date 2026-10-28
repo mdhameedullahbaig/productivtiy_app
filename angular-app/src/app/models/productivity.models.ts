@@ -79,3 +79,15 @@ export interface FreeTimeSummary {
   status: 'open' | 'moderate' | 'busy';
   statusLabel: string;
 }
+
+export interface NextEventInfo {
+  event: CalendarEvent;
+  isHappeningNow: boolean;
+  timeUntilFormatted: string;
+  countdownFormatted: string;
+  minutesUntilStart: number;
+  minutesRemaining?: number;
+  urgency: 'now' | 'imminent' | 'today' | 'upcoming';
+  statusLabel: string;
+}
+
