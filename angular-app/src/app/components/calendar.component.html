@@ -1,4 +1,4 @@
-<div class="space-y-6">
+  <div class="space-y-6">
       <!-- Toolbar -->
       <div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
         <div class="flex items-center gap-3">
@@ -12,7 +12,26 @@
           </h2>
         </div>
 
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-wrap">
+          <!-- Auto-cleanup past events status badge / toggle -->
+          <button
+            type="button"
+            (click)="service.toggleAutoCleanup()"
+            class="px-2.5 py-1.5 text-xs font-mono font-medium rounded-lg border transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            [class]="service.autoCleanupEnabled() 
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100' 
+              : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'"
+            title="Automatically purges non-recurring past events as time elapses"
+          >
+            <span class="w-1.5 h-1.5 rounded-full" [class]="service.autoCleanupEnabled() ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'"></span>
+            <span>Auto-cleanup: {{ service.autoCleanupEnabled() ? 'ON' : 'OFF' }}</span>
+            @if (service.totalAutoCleanedEvents() > 0) {
+              <span class="text-[10px] bg-emerald-200/80 text-emerald-900 px-1.5 py-0.2 rounded-full font-bold">
+                {{ service.totalAutoCleanedEvents() }} purged
+              </span>
+            }
+          </button>
+
           <button
             type="button"
             (click)="scheduleOnSelectedDate()"
@@ -68,45 +87,56 @@
         <!-- Next Event Spotlight (When viewing today) -->
         @if (selectedDateStr() === todayStr && service.nextEvent(); as next) {
           <div
-            class="rounded-xl border-2 p-3.5 sm:p-4 shadow-xs transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+            class="rounded-xl border p-4 shadow-xs transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
             [class]="next.isHappeningNow 
-              ? 'bg-gradient-to-r from-emerald-50 via-teal-50/50 to-white border-emerald-400 text-emerald-950' 
+              ? 'bg-gradient-to-r from-emerald-50/90 via-teal-50/40 to-white border-emerald-300 text-emerald-950 ring-2 ring-emerald-100' 
               : (next.urgency === 'imminent' 
-                  ? 'bg-gradient-to-r from-amber-50 via-orange-50/50 to-white border-amber-400 text-amber-950' 
-                  : 'bg-gradient-to-r from-indigo-50 via-purple-50/40 to-white border-indigo-400 text-indigo-950')"
+                  ? 'bg-gradient-to-r from-amber-50/90 via-orange-50/40 to-white border-amber-300 text-amber-950 ring-2 ring-amber-100' 
+                  : 'bg-gradient-to-r from-indigo-50/90 via-purple-50/40 to-white border-indigo-300 text-indigo-950 ring-2 ring-indigo-100')"
           >
-            <div class="flex items-center gap-3">
+            <div class="flex items-start gap-3.5 min-w-0 flex-1">
               <div
-                class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg shrink-0 shadow-2xs"
-                [class]="next.isHappeningNow ? 'bg-emerald-600 text-white' : 'bg-indigo-600 text-white'"
+                class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg shrink-0 shadow-2xs mt-0.5"
+                [class]="next.isHappeningNow ? 'bg-emerald-600 text-white' : (next.urgency === 'imminent' ? 'bg-amber-500 text-white' : 'bg-indigo-600 text-white')"
               >
                 ⚡
               </div>
-              <div>
+              <div class="space-y-1.5 min-w-0 flex-1">
                 <div class="flex items-center gap-2 flex-wrap">
                   <span
-                    class="text-[10px] font-bold font-mono px-2 py-0.5 rounded-full uppercase tracking-wider text-white flex items-center gap-1 shadow-2xs"
-                    [class]="next.isHappeningNow ? 'bg-emerald-600' : 'bg-indigo-600'"
+                    class="text-[10px] font-bold font-mono px-2.5 py-0.5 rounded-full uppercase tracking-wider text-white flex items-center gap-1 shadow-2xs shrink-0"
+                    [class]="next.isHappeningNow ? 'bg-emerald-600' : (next.urgency === 'imminent' ? 'bg-amber-600' : 'bg-indigo-600')"
                   >
                     <span class="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
                     <span>{{ next.isHappeningNow ? 'Active Now' : 'Next Event Up' }}</span>
                   </span>
-                  <span class="text-sm font-bold text-slate-900">{{ next.event.title }}</span>
-                  <span class="text-xs font-mono font-semibold text-indigo-700">({{ next.event.startTime }} – {{ next.event.endTime }})</span>
-                </div>
-                <div class="text-xs text-slate-600 font-mono mt-0.5 flex items-center gap-2">
-                  <span>⏳ {{ next.timeUntilFormatted }}</span>
+
+                  <span class="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full border bg-white/90 border-slate-200 text-slate-700 shadow-2xs shrink-0">
+                    ⏳ {{ next.timeUntilFormatted }}
+                  </span>
+
                   @if (next.event.frequency && next.event.frequency !== 'none') {
-                    <span>·</span>
-                    <span class="text-purple-700 font-semibold">🔁 {{ next.event.frequency }}</span>
+                    <span class="text-[10px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-900 border border-purple-200 shadow-2xs shrink-0">
+                      🔁 {{ next.event.frequency }}
+                    </span>
                   }
+                </div>
+
+                <div class="flex items-baseline gap-2 flex-wrap">
+                  <h4 class="text-sm font-bold text-slate-900 leading-snug">
+                    {{ next.event.title }}
+                  </h4>
+                  <span class="text-xs font-mono font-bold text-indigo-700 shrink-0">
+                    {{ next.event.startTime }} – {{ next.event.endTime }}
+                  </span>
                 </div>
               </div>
             </div>
+
             <button
               type="button"
               (click)="selectEvent(next.event, $event)"
-              class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 shadow-2xs transition-colors cursor-pointer self-start sm:self-auto shrink-0"
+              class="px-3.5 py-2 text-xs font-semibold rounded-lg bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 shadow-2xs transition-colors cursor-pointer self-start sm:self-center shrink-0"
             >
               Spotlight Details →
             </button>

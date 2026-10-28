@@ -126,100 +126,130 @@ import { AudioService } from '../services/audio.service';
         </div>
       </div>
 
-      <!-- Next Event Spotlight Card (High Visibility) -->
+      <!-- Next Event Spotlight Card (High Visibility & Immaculate Alignment) -->
       @if (service.nextEvent(); as next) {
         <section
-          class="relative overflow-hidden rounded-2xl border-2 p-5 sm:p-6 shadow-sm transition-all duration-300"
+          class="relative overflow-hidden rounded-2xl border p-5 sm:p-6 shadow-sm transition-all duration-300"
           [class]="next.isHappeningNow 
-            ? 'bg-gradient-to-br from-emerald-50 via-teal-50/60 to-white border-emerald-400 ring-4 ring-emerald-100/70' 
+            ? 'bg-gradient-to-br from-emerald-50/90 via-teal-50/40 to-white border-emerald-300 ring-4 ring-emerald-100/60' 
             : (next.urgency === 'imminent' 
-                ? 'bg-gradient-to-br from-amber-50/90 via-orange-50/40 to-white border-amber-400 ring-4 ring-amber-100/70' 
-                : 'bg-gradient-to-br from-indigo-50/90 via-purple-50/40 to-white border-indigo-400 ring-4 ring-indigo-100/60')"
+                ? 'bg-gradient-to-br from-amber-50/90 via-orange-50/40 to-white border-amber-300 ring-4 ring-amber-100/60' 
+                : 'bg-gradient-to-br from-indigo-50/90 via-purple-50/40 to-white border-indigo-300 ring-4 ring-indigo-100/60')"
         >
-          <!-- Decorative accent blur -->
+          <!-- Subtle decorative radial background glow -->
           <div
-            class="absolute -right-8 -bottom-8 w-44 h-44 rounded-full blur-2xl pointer-events-none opacity-40"
-            [class]="next.isHappeningNow ? 'bg-emerald-300' : (next.urgency === 'imminent' ? 'bg-amber-300' : 'bg-indigo-300')"
+            class="absolute -right-6 -bottom-6 w-48 h-48 rounded-full blur-2xl pointer-events-none opacity-30"
+            [class]="next.isHappeningNow ? 'bg-emerald-400' : (next.urgency === 'imminent' ? 'bg-amber-400' : 'bg-indigo-400')"
           ></div>
 
-          <div class="relative flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <!-- Left Info -->
-            <div class="space-y-2.5">
-              <div class="flex items-center gap-2.5 flex-wrap">
-                <!-- Pulsing attention pill -->
-                <span
-                  class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold font-mono tracking-wider shadow-xs uppercase"
-                  [class]="next.isHappeningNow 
-                    ? 'bg-emerald-600 text-white' 
-                    : (next.urgency === 'imminent' ? 'bg-amber-600 text-white' : 'bg-indigo-600 text-white')"
-                >
-                  <span class="relative flex h-2 w-2">
-                    <span
-                      class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-80"
-                      [class]="next.isHappeningNow ? 'bg-emerald-200' : (next.urgency === 'imminent' ? 'bg-amber-200' : 'bg-indigo-200')"
-                    ></span>
-                    <span class="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
-                  </span>
-                  <span>{{ next.isHappeningNow ? '● In Progress Now' : '⚡ Next Event Up' }}</span>
-                </span>
-
-                <!-- Live countdown badge -->
-                <span
-                  class="px-2.5 py-1 text-xs font-mono font-bold rounded-lg border shadow-2xs flex items-center gap-1"
-                  [class]="next.isHappeningNow 
-                    ? 'bg-emerald-100 text-emerald-950 border-emerald-300' 
-                    : (next.urgency === 'imminent' 
-                        ? 'bg-amber-100 text-amber-950 border-amber-300 animate-pulse' 
-                        : 'bg-indigo-100 text-indigo-950 border-indigo-200')"
-                >
-                  <span>⏳</span>
-                  <span>{{ next.timeUntilFormatted }}</span>
-                </span>
-
-                <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full border bg-white/90 text-slate-700 border-slate-200 shadow-2xs capitalize">
-                  {{ next.event.category }}
-                </span>
-
-                @if (next.event.frequency && next.event.frequency !== 'none') {
-                  <span class="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-md bg-purple-100 text-purple-800 border border-purple-200">
-                    🔁 {{ next.event.frequency }}
-                  </span>
-                }
+          <div class="relative flex flex-col md:flex-row md:items-start justify-between gap-5">
+            <!-- Left Content: Icon + Details -->
+            <div class="flex items-start gap-4 min-w-0 flex-1">
+              <!-- Spotlight Icon Badge -->
+              <div
+                class="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-xl shrink-0 shadow-xs mt-0.5"
+                [class]="next.isHappeningNow 
+                  ? 'bg-emerald-600 text-white' 
+                  : (next.urgency === 'imminent' ? 'bg-amber-500 text-white' : 'bg-indigo-600 text-white')"
+              >
+                ⚡
               </div>
 
-              <!-- Title & time -->
-              <div>
-                <h2 class="text-lg sm:text-xl font-bold tracking-tight text-slate-950">
-                  {{ next.event.title }}
-                </h2>
-                <div class="flex items-center gap-3 text-xs text-slate-600 font-mono mt-1 flex-wrap">
-                  <span class="font-bold text-slate-900">🕒 {{ next.event.startTime }} – {{ next.event.endTime }}</span>
-                  @if (next.event.startDate) {
-                    <span>·</span>
-                    <span>📅 {{ next.event.startDate }}</span>
-                  }
-                  @if (next.event.locationOrLink) {
-                    <span>·</span>
-                    <span class="truncate max-w-xs">📍 {{ next.event.locationOrLink }}</span>
+              <!-- Main Details Stack -->
+              <div class="space-y-2 min-w-0 flex-1">
+                <!-- Row 1: Badges & Status Pills (Uniform height, radius, and alignment) -->
+                <div class="flex items-center gap-2 flex-wrap">
+                  <!-- Live Attention Status Pill -->
+                  <span
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold font-mono tracking-wider shadow-2xs uppercase text-white shrink-0"
+                    [class]="next.isHappeningNow 
+                      ? 'bg-emerald-600' 
+                      : (next.urgency === 'imminent' ? 'bg-amber-600' : 'bg-indigo-600')"
+                  >
+                    <span class="relative flex h-2 w-2">
+                      <span
+                        class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+                        [class]="next.isHappeningNow ? 'bg-emerald-200' : (next.urgency === 'imminent' ? 'bg-amber-200' : 'bg-indigo-200')"
+                      ></span>
+                      <span class="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                    </span>
+                    <span>{{ next.isHappeningNow ? 'Active Now' : 'Next Up' }}</span>
+                  </span>
+
+                  <!-- Live Countdown Pill -->
+                  <span
+                    class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-mono font-bold rounded-full border shadow-2xs shrink-0"
+                    [class]="next.isHappeningNow 
+                      ? 'bg-emerald-100/90 text-emerald-950 border-emerald-300' 
+                      : (next.urgency === 'imminent' 
+                          ? 'bg-amber-100/90 text-amber-950 border-amber-300 animate-pulse' 
+                          : 'bg-indigo-100/90 text-indigo-950 border-indigo-200')"
+                  >
+                    <span aria-hidden="true">⏳</span>
+                    <span>{{ next.timeUntilFormatted }}</span>
+                  </span>
+
+                  <!-- Category Pill -->
+                  <span class="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full border bg-white/90 text-slate-700 border-slate-200/90 shadow-2xs capitalize shrink-0">
+                    {{ next.event.category }}
+                  </span>
+
+                  <!-- Frequency Pill (if recurring) -->
+                  @if (next.event.frequency && next.event.frequency !== 'none') {
+                    <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-mono font-semibold rounded-full bg-purple-100/90 text-purple-900 border border-purple-200 shadow-2xs shrink-0">
+                      <span aria-hidden="true">🔁</span>
+                      <span>{{ next.event.frequency }}</span>
+                    </span>
                   }
                 </div>
+
+                <!-- Row 2: Event Title -->
+                <h2 class="text-lg sm:text-xl font-bold tracking-tight text-slate-950 leading-snug">
+                  {{ next.event.title }}
+                </h2>
+
+                <!-- Row 3: Event Timing, Date & Location (Clean icons and dividers) -->
+                <div class="flex items-center gap-2.5 text-xs text-slate-600 font-mono flex-wrap">
+                  <span class="inline-flex items-center gap-1.5 font-bold text-slate-900">
+                    <span aria-hidden="true">🕒</span>
+                    <span>{{ next.event.startTime }} – {{ next.event.endTime }}</span>
+                  </span>
+
+                  @if (next.event.startDate) {
+                    <span class="text-slate-300 font-sans" aria-hidden="true">•</span>
+                    <span class="inline-flex items-center gap-1.5 text-slate-600">
+                      <span aria-hidden="true">📅</span>
+                      <span>{{ next.event.startDate }}</span>
+                    </span>
+                  }
+
+                  @if (next.event.locationOrLink) {
+                    <span class="text-slate-300 font-sans" aria-hidden="true">•</span>
+                    <span class="inline-flex items-center gap-1.5 text-slate-600 truncate max-w-xs">
+                      <span aria-hidden="true">📍</span>
+                      <span class="truncate">{{ next.event.locationOrLink }}</span>
+                    </span>
+                  }
+                </div>
+
+                <!-- Row 4: Description (if provided) -->
                 @if (next.event.description) {
-                  <p class="text-xs text-slate-600 mt-1.5 max-w-2xl line-clamp-2 leading-relaxed">
+                  <p class="text-xs text-slate-600 leading-relaxed max-w-2xl pt-0.5">
                     {{ next.event.description }}
                   </p>
                 }
               </div>
             </div>
 
-            <!-- Action Button -->
-            <div class="flex items-center gap-2 self-start md:self-center shrink-0">
+            <!-- Right Action: Cleanly top-aligned on desktop, full-width on mobile -->
+            <div class="flex items-center gap-2 shrink-0 md:pt-1 self-start md:self-start">
               <button
                 type="button"
                 (click)="service.setTab('calendar')"
-                class="px-4 py-2.5 text-xs font-semibold rounded-xl text-white shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                class="w-full md:w-auto px-4 py-2.5 text-xs font-semibold rounded-xl text-white shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                 [class]="next.isHappeningNow 
-                  ? 'bg-emerald-600 hover:bg-emerald-700' 
-                  : (next.urgency === 'imminent' ? 'bg-amber-600 hover:bg-amber-700' : 'bg-indigo-600 hover:bg-indigo-700')"
+                  ? 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800' 
+                  : (next.urgency === 'imminent' ? 'bg-amber-600 hover:bg-amber-700 active:bg-amber-800' : 'bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800')"
               >
                 <span>View on Calendar →</span>
               </button>
@@ -233,10 +263,17 @@ import { AudioService } from '../services/audio.service';
         <!-- Events column -->
         <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
           <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
               <h3 class="text-sm font-bold text-slate-900">Today's Events</h3>
               <span class="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-800 border-emerald-200">
                 {{ todaySummary().freeWorkdayFormatted }} Free
+              </span>
+              <span
+                class="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full border bg-slate-50 text-slate-600 border-slate-200 flex items-center gap-1 shadow-2xs"
+                title="Non-recurring past events are automatically removed"
+              >
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span>Auto-clean</span>
               </span>
             </div>
             <button (click)="service.setTab('calendar')" class="text-xs text-indigo-600 hover:underline cursor-pointer">
@@ -254,13 +291,11 @@ import { AudioService } from '../services/audio.service';
                 <div
                   class="p-3.5 rounded-xl border transition-all flex items-center justify-between gap-3 shadow-2xs"
                   [class]="isNextEvent(evt.id) 
-                    ? 'border-2 border-indigo-500 bg-indigo-50/80 ring-2 ring-indigo-200 shadow-xs' 
+                    ? 'border-indigo-400 bg-indigo-50/80 ring-2 ring-indigo-200/80 shadow-xs' 
                     : 'border-slate-200 bg-slate-50/60 hover:bg-slate-50'"
                 >
-                  <div class="min-w-0">
+                  <div class="min-w-0 flex-1">
                     <div class="flex items-center gap-2 flex-wrap">
-                      <span class="text-xs font-semibold text-slate-900 truncate">{{ evt.title }}</span>
-                      
                       <!-- Next Up attention badge -->
                       @if (isNextEvent(evt.id)) {
                         <span class="text-[10px] bg-indigo-600 text-white font-bold font-mono px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shrink-0 shadow-xs">
@@ -268,6 +303,8 @@ import { AudioService } from '../services/audio.service';
                           <span>Next Up</span>
                         </span>
                       }
+
+                      <span class="text-xs font-semibold text-slate-900 truncate">{{ evt.title }}</span>
 
                       <span
                         class="text-[11px] font-mono tabular-nums shrink-0"
@@ -277,12 +314,12 @@ import { AudioService } from '../services/audio.service';
                       </span>
 
                       @if (evt.frequency && evt.frequency !== 'none') {
-                        <span class="text-[10px] bg-purple-100 text-purple-800 font-mono px-1.5 py-0.5 rounded font-semibold uppercase shrink-0">
+                        <span class="text-[10px] bg-purple-100 text-purple-800 font-mono px-2 py-0.5 rounded-full font-semibold uppercase shrink-0 border border-purple-200">
                           🔁 {{ evt.frequency }}
                         </span>
                       }
                     </div>
-                    <div class="text-[11px] text-slate-400 font-mono mt-0.5">{{ evt.category }}</div>
+                    <div class="text-[11px] text-slate-400 font-mono mt-0.5 capitalize">{{ evt.category }}</div>
                   </div>
 
                   <button

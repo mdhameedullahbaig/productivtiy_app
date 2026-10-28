@@ -85,6 +85,11 @@ export class ProductivityService {
   currentTime = signal<Date>(new Date());
   private clockInterval: any = null;
 
+  // Auto-cleanup past events tracking
+  autoCleanupEnabled = signal<boolean>(true);
+  totalAutoCleanedEvents = signal<number>(0);
+  lastAutoCleanedTimestamp = signal<string>('');
+
   nextEvent = computed<NextEventInfo | null>(() => {
     return this.computeNextEvent();
   });
@@ -96,7 +101,8 @@ export class ProductivityService {
   }
 
   /**
-   * Keep current time reactive for live event countdowns & next event tracking
+   * Keep current time reactive for live event countdowns & next event tracking,
+   * and automatically purge past elapsed events.
    */
   startClockTimer() {
     if (typeof window === 'undefined') return;
@@ -105,6 +111,9 @@ export class ProductivityService {
     }
     this.clockInterval = setInterval(() => {
       this.currentTime.set(new Date());
+      if (this.autoCleanupEnabled()) {
+        this.autoRemovePastEvents();
+      }
     }, 10000);
   }
 
@@ -157,6 +166,11 @@ export class ProductivityService {
         }
       }
 
+      // Automatically purge any past events upon hydration
+      if (this.autoCleanupEnabled()) {
+        await this.autoRemovePastEvents();
+      }
+
       if (dbReminders && dbReminders.length > 0) {
         this.reminders.set(dbReminders);
       } else {
@@ -201,6 +215,9 @@ export class ProductivityService {
     this.events.update(list => [newEvent, ...list]);
     this.saveToStorage(this.STORAGE_EVENTS, this.events());
     await this.db.saveEvent(newEvent);
+    if (this.autoCleanupEnabled()) {
+      await this.autoRemovePastEvents();
+    }
   }
 
   async deleteEvent(id: string) {
@@ -240,6 +257,85 @@ export class ProductivityService {
     }
 
     return event.startDate === targetDateStr;
+  }
+
+  /**
+   * Determines if a calendar event has already passed.
+   * - Recurring events ('daily', 'weekly', 'monthly') continue in future cycles and are NOT past events.
+   * - One-time events ('none' or undefined) are past if:
+   *   1. Their startDate is before today's date (YYYY-MM-DD), OR
+   *   2. Their startDate is today, and their endTime has elapsed relative to currentTime.
+   */
+  isPastEvent(event: CalendarEvent, referenceDate: Date = this.currentTime()): boolean {
+    const freq = event.frequency || 'none';
+    if (freq !== 'none') {
+      return false;
+    }
+
+    if (!event.startDate) return false;
+
+    const todayStr = this.getLocalDateString(referenceDate);
+    if (event.startDate < todayStr) {
+      return true;
+    }
+
+    if (event.startDate === todayStr) {
+      const nowMinutes = referenceDate.getHours() * 60 + referenceDate.getMinutes();
+      const startMinutes = this.parseTimeToMinutes(event.startTime);
+      let endMinutes = this.parseTimeToMinutes(event.endTime);
+      if (endMinutes <= startMinutes) {
+        endMinutes = Math.min(1440, startMinutes + 60);
+      }
+      return endMinutes <= nowMinutes;
+    }
+
+    return false;
+  }
+
+  /**
+   * Automatically identifies and deletes all elapsed one-time events from state,
+   * local storage, and the persistent IndexedDB database.
+   * Returns the count of removed past events.
+   */
+  async autoRemovePastEvents(): Promise<number> {
+    const currentEvents = this.events();
+    const now = this.currentTime();
+    const pastIds = currentEvents
+      .filter(e => this.isPastEvent(e, now))
+      .map(e => e.id);
+
+    if (pastIds.length === 0) {
+      return 0;
+    }
+
+    // Filter out past events reactively
+    const survivingEvents = currentEvents.filter(e => !pastIds.includes(e.id));
+    this.events.set(survivingEvents);
+    this.saveToStorage(this.STORAGE_EVENTS, survivingEvents);
+
+    // Batch delete from IndexedDB
+    try {
+      await this.db.deleteMultipleEvents(pastIds);
+    } catch (e) {
+      console.warn('Failed to delete past events from database', e);
+    }
+
+    // Update cleanup statistics
+    this.totalAutoCleanedEvents.update(total => total + pastIds.length);
+    const nowTimeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    this.lastAutoCleanedTimestamp.set(nowTimeStr);
+
+    return pastIds.length;
+  }
+
+  /**
+   * Toggles automatic past event removal (default: enabled)
+   */
+  toggleAutoCleanup() {
+    this.autoCleanupEnabled.update(enabled => !enabled);
+    if (this.autoCleanupEnabled()) {
+      this.autoRemovePastEvents();
+    }
   }
 
   parseTimeToMinutes(t: string): number {

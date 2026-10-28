@@ -8,7 +8,7 @@ import { CalendarEvent, FreeTimeSummary } from '../models/productivity.models';
   standalone: true,
   imports: [CommonModule],
   providers: [DatePipe],
-  templateUrl: "./calendar.component.html"
+  templateUrl: './calendar.component.html'
 })
 export class CalendarComponent {
   service = inject(ProductivityService);

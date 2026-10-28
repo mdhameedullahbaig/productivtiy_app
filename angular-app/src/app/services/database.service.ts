@@ -111,6 +111,20 @@ export class DatabaseService {
     });
   }
 
+  async deleteMultipleEvents(ids: string[]): Promise<void> {
+    if (!ids || ids.length === 0) return;
+    const db = await this.initDatabase();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('events', 'readwrite');
+      const store = tx.objectStore('events');
+      for (const id of ids) {
+        store.delete(id);
+      }
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
   // --- REMINDERS DB OPERATIONS ---
 
   async getAllReminders(): Promise<Reminder[]> {
