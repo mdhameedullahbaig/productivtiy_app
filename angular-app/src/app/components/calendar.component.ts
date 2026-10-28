@@ -16,7 +16,7 @@ export class CalendarComponent {
   openAddEvent = output<string | void>();
 
   currentDate = signal(new Date());
-  todayStr = new Date().toISOString().split('T')[0];
+  todayStr = this.datePipe.transform(new Date(), 'yyyy-MM-dd')!;
 
   selectedDateStr = signal<string>(this.todayStr);
 
@@ -140,7 +140,7 @@ export class CalendarComponent {
 
   getCellFreeTooltip(dateStr: string): string {
     const summary = this.service.getFreeTimeSummary(dateStr);
-    return `${summary.freeWorkdayFormatted} free time between 8am and 8pm (${summary.freePercentageWorkday}% free, ${summary.busyFormatted} booked)`;
+    return `${summary.freeWorkdayFormatted} free time between 5am and 10pm (${summary.freePercentageWorkday}% free, ${summary.busyFormatted} booked)`;
   }
 
   getStatusBadgeClass(status: 'open' | 'moderate' | 'busy'): string {
@@ -158,7 +158,7 @@ export class CalendarComponent {
   getEventLeftPercent(evt: CalendarEvent): number {
     const parts = evt.startTime.split(':');
     const mins = (parseInt(parts[0], 10) || 0) * 60 + (parseInt(parts[1], 10) || 0);
-    // Workday: 300 (5:00) to 1320 (22:00) = 1020 mins
+    // Daytime window: 300 (05:00) to 1320 (22:00) = 1020 mins (17h)
     const clamped = Math.max(300, Math.min(1320, mins));
     return ((clamped - 300) / 1020) * 100;
   }
@@ -195,6 +195,14 @@ export class CalendarComponent {
     const evt = this.selectedEvent();
     if (evt) {
       this.service.deleteEvent(evt.id);
+      this.selectedEvent.set(null);
+    }
+  }
+
+  deleteSelectedSeries() {
+    const evt = this.selectedEvent();
+    if (evt?.seriesId) {
+      this.service.deleteEventSeries(evt.seriesId);
       this.selectedEvent.set(null);
     }
   }

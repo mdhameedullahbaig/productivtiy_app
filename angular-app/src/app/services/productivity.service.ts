@@ -211,10 +211,11 @@ export class ProductivityService {
 
   // Events management (Dynamic DB backed)
   async addEvent(event: Omit<CalendarEvent, 'id'>) {
-    const newEvent: CalendarEvent = { ...event, id: `evt-${Date.now()}` };
-    this.events.update(list => [newEvent, ...list]);
+    // Generate individual event records with specific start dates based on selected frequency
+    const newEvents = this.generateEventsByFrequency(event);
+    this.events.update(list => [...newEvents, ...list]);
     this.saveToStorage(this.STORAGE_EVENTS, this.events());
-    await this.db.saveEvent(newEvent);
+    await this.db.saveMultipleEvents(newEvents);
     if (this.autoCleanupEnabled()) {
       await this.autoRemovePastEvents();
     }
@@ -226,30 +227,130 @@ export class ProductivityService {
     await this.db.deleteEvent(id);
   }
 
-  /**
-   * Evaluates if an event takes place on targetDateStr (YYYY-MM-DD),
-   * considering frequency recurrence ('none', 'daily', 'weekly', 'monthly').
-   */
-  isEventOnDate(event: CalendarEvent, targetDateStr: string): boolean {
-    if (!event.startDate) return false;
-    // An event cannot occur before its scheduled start date
-    if (targetDateStr < event.startDate) return false;
+  async deleteEventSeries(seriesId: string) {
+    const idsToDelete = this.events()
+      .filter(e => e.seriesId === seriesId)
+      .map(e => e.id);
 
-    const freq = event.frequency || 'none';
+    this.events.update(list => list.filter(e => e.seriesId !== seriesId));
+    this.saveToStorage(this.STORAGE_EVENTS, this.events());
+    await this.db.deleteMultipleEvents(idsToDelete);
+  }
+
+  /**
+   * Generates event records with specific start dates based on recurrence frequency:
+   * - 'daily': Generates events for 60 consecutive days starting from startDate.
+   * - 'weekly': Generates events for 26 weekly occurrences (6 months) on the specific weekday of startDate.
+   * - 'monthly': Generates events for 12 monthly occurrences (1 year) on the specific day-of-month of startDate.
+   * - 'none': Generates 1 event with the specified startDate.
+   */
+  generateEventsByFrequency(baseEvent: Omit<CalendarEvent, 'id'>): CalendarEvent[] {
+    const freq = baseEvent.frequency || 'none';
+    const seriesId = `series-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const startParts = (baseEvent.startDate || this.getLocalDateString()).split('-');
+    const baseYear = parseInt(startParts[0], 10);
+    const baseMonth = parseInt(startParts[1], 10) - 1;
+    const baseDay = parseInt(startParts[2], 10);
+
+    const generated: CalendarEvent[] = [];
+
     if (freq === 'none') {
-      return event.startDate === targetDateStr;
+      generated.push({
+        ...baseEvent,
+        id: `evt-${Date.now()}`,
+        seriesId
+      });
+      return generated;
     }
 
     if (freq === 'daily') {
+      // 60 days of daily occurrences each saved with its specific startDate
+      for (let i = 0; i < 60; i++) {
+        const d = new Date(baseYear, baseMonth, baseDay + i);
+        const dateStr = this.getLocalDateString(d);
+        generated.push({
+          ...baseEvent,
+          id: `evt-${Date.now()}-${i}`,
+          seriesId,
+          startDate: dateStr,
+          frequency: 'daily'
+        });
+      }
+      return generated;
+    }
+
+    if (freq === 'weekly') {
+      // 26 weekly occurrences on the specific weekday
+      for (let i = 0; i < 26; i++) {
+        const d = new Date(baseYear, baseMonth, baseDay + (i * 7));
+        const dateStr = this.getLocalDateString(d);
+        generated.push({
+          ...baseEvent,
+          id: `evt-${Date.now()}-${i}`,
+          seriesId,
+          startDate: dateStr,
+          frequency: 'weekly'
+        });
+      }
+      return generated;
+    }
+
+    if (freq === 'monthly') {
+      // 12 monthly occurrences on the specific day of month
+      for (let i = 0; i < 12; i++) {
+        const d = new Date(baseYear, baseMonth + i, baseDay);
+        // Clamp to last day of month if original day exceeds month length (e.g. 31st in a 30-day month)
+        if (d.getDate() !== baseDay) {
+          const lastDayOfTargetMonth = new Date(baseYear, baseMonth + i + 1, 0);
+          d.setTime(lastDayOfTargetMonth.getTime());
+        }
+        const dateStr = this.getLocalDateString(d);
+        generated.push({
+          ...baseEvent,
+          id: `evt-${Date.now()}-${i}`,
+          seriesId,
+          startDate: dateStr,
+          frequency: 'monthly'
+        });
+      }
+      return generated;
+    }
+
+    generated.push({
+      ...baseEvent,
+      id: `evt-${Date.now()}`,
+      seriesId
+    });
+    return generated;
+  }
+
+  /**
+   * Evaluates if an event takes place on targetDateStr (YYYY-MM-DD).
+   * For events saved with specific start dates (via frequency generator),
+   * the event takes place strictly on its specific startDate.
+   */
+  isEventOnDate(event: CalendarEvent, targetDateStr: string): boolean {
+    if (!event.startDate) return false;
+
+    // Events saved with specific start dates match their explicit startDate
+    if (event.startDate === targetDateStr) {
       return true;
     }
 
+    // If the event belongs to an expanded series, it is already mapped to its specific date
+    if (event.seriesId) {
+      return event.startDate === targetDateStr;
+    }
+
+    // Fallback for legacy un-expanded events
+    if (targetDateStr < event.startDate) return false;
+    const freq = event.frequency || 'none';
+    if (freq === 'daily') return true;
     if (freq === 'weekly') {
       const startD = new Date(event.startDate + 'T00:00:00');
       const targetD = new Date(targetDateStr + 'T00:00:00');
       return startD.getDay() === targetD.getDay();
     }
-
     if (freq === 'monthly') {
       const startDayNum = parseInt(event.startDate.split('-')[2], 10);
       const targetDayNum = parseInt(targetDateStr.split('-')[2], 10);
@@ -261,20 +362,21 @@ export class ProductivityService {
 
   /**
    * Determines if a calendar event has already passed.
-   * - Recurring events ('daily', 'weekly', 'monthly') continue in future cycles and are NOT past events.
-   * - One-time events ('none' or undefined) are past if:
-   *   1. Their startDate is before today's date (YYYY-MM-DD), OR
-   *   2. Their startDate is today, and their endTime has elapsed relative to currentTime.
+   * - Events saved with specific start dates: passed if their startDate < todayStr,
+   *   or if today and their endTime has elapsed.
+   * - Legacy recurring events without seriesId: preserved for future cycles.
    */
   isPastEvent(event: CalendarEvent, referenceDate: Date = this.currentTime()): boolean {
-    const freq = event.frequency || 'none';
-    if (freq !== 'none') {
-      return false;
-    }
-
     if (!event.startDate) return false;
 
     const todayStr = this.getLocalDateString(referenceDate);
+
+    // If this is a legacy unexpanded recurring event, don't delete the root
+    if (!event.seriesId && event.frequency && event.frequency !== 'none') {
+      return false;
+    }
+
+    // For events with specific start dates:
     if (event.startDate < todayStr) {
       return true;
     }
@@ -506,10 +608,10 @@ export class ProductivityService {
     }
     const totalFreeMinutes24h = Math.max(0, 1440 - totalBusyMinutes);
 
-    // Active workday window: 05:00 (300 min) to 22:00 (1320 min) = 1020 minutes
-    const WORKDAY_START = 300; // 05:00
-    const WORKDAY_END = 1320;  // 22:00
-    const WORKDAY_TOTAL = WORKDAY_END - WORKDAY_START;
+    // Active daytime window: 05:00 (300 min / 5 AM) to 22:00 (1320 min / 10 PM) = 1020 minutes (17 hours)
+    const WORKDAY_START = 300; // 05:00 (5 AM)
+    const WORKDAY_END = 1320;  // 22:00 (10 PM)
+    const WORKDAY_TOTAL = WORKDAY_END - WORKDAY_START; // 1020 mins (17 hours)
 
     const workdayBusyIntervals: { start: number; end: number }[] = [];
     for (const m of merged) {

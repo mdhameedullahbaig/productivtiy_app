@@ -12,6 +12,7 @@ export type EventFrequency = 'none' | 'daily' | 'weekly' | 'monthly';
 
 export interface CalendarEvent {
   id: string;
+  seriesId?: string;
   title: string;
   description?: string;
   startDate: string; // YYYY-MM-DD
@@ -69,7 +70,7 @@ export interface FreeTimeSlot {
 export interface FreeTimeSummary {
   dateStr: string;
   totalBusyMinutes: number;
-  totalFreeMinutesWorkday: number; // 8:00 - 20:00 (720 min active window)
+  totalFreeMinutesWorkday: number; // 05:00 - 22:00 (1020 min active daytime window)
   freePercentageWorkday: number;
   totalFreeMinutes24h: number; // 1440 min
   busyFormatted: string;

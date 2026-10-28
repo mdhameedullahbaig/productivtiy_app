@@ -100,6 +100,20 @@ export class DatabaseService {
     });
   }
 
+  async saveMultipleEvents(events: CalendarEvent[]): Promise<void> {
+    if (!events || events.length === 0) return;
+    const db = await this.initDatabase();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('events', 'readwrite');
+      const store = tx.objectStore('events');
+      for (const evt of events) {
+        store.put(evt);
+      }
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
   async deleteEvent(id: string): Promise<void> {
     const db = await this.initDatabase();
     return new Promise((resolve, reject) => {

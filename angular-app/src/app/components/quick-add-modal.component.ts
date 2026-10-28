@@ -98,6 +98,24 @@ import { Priority, EventCategory, ReminderCategory, EventFrequency } from '../mo
             </div>
           </div>
 
+          <!-- Frequency Database Storage Notice -->
+          <div class="p-2.5 rounded-lg text-xs flex items-start gap-2 border"
+            [class.bg-indigo-50]="evtFrequency !== 'none'"
+            [class.border-indigo-200]="evtFrequency !== 'none'"
+            [class.text-indigo-900]="evtFrequency !== 'none'"
+            [class.bg-slate-50]="evtFrequency === 'none'"
+            [class.border-slate-200]="evtFrequency === 'none'"
+            [class.text-slate-600]="evtFrequency === 'none'"
+          >
+            <span class="text-sm shrink-0">💾</span>
+            <div class="leading-relaxed">
+              <span class="font-semibold text-[11px] uppercase tracking-wide block mb-0.5">
+                Database Storage (Specific Start Dates)
+              </span>
+              <span>{{ getFrequencyInfoText() }}</span>
+            </div>
+          </div>
+
           <div class="flex justify-end gap-2 pt-3">
             <button type="button" (click)="close.emit()" class="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer">Cancel</button>
             <button type="submit" class="px-4 py-2 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg cursor-pointer">Schedule Event</button>
@@ -159,5 +177,25 @@ export class QuickAddModalComponent implements OnInit {
       frequency: this.evtFrequency
     });
     this.close.emit();
+  }
+
+  getFrequencyInfoText(): string {
+    if (!this.evtDate) return '';
+    const parts = this.evtDate.split('-');
+    if (parts.length !== 3) return '';
+    const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    const dayName = d.toLocaleDateString('en-US', { weekday: 'long' });
+    const dayNum = parseInt(parts[2], 10);
+
+    if (this.evtFrequency === 'daily') {
+      return `Database will store 60 individual event records with consecutive start dates starting from ${this.evtDate}.`;
+    }
+    if (this.evtFrequency === 'weekly') {
+      return `Database will store 26 weekly event records on every ${dayName} starting from ${this.evtDate}.`;
+    }
+    if (this.evtFrequency === 'monthly') {
+      return `Database will store 12 monthly event records on day ${dayNum} of each month starting from ${this.evtDate}.`;
+    }
+    return `Database will store 1 event record with start date ${this.evtDate}.`;
   }
 }
