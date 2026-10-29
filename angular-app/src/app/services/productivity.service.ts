@@ -1,5 +1,17 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
-import { CalendarEvent, Reminder, DailyStats, Quote, ViewTab, FreeTimeSummary, FreeTimeSlot, NextEventInfo } from '../models/productivity.models';
+import {
+  CalendarEvent,
+  Reminder,
+  DailyStats,
+  Quote,
+  ViewTab,
+  FreeTimeSummary,
+  FreeTimeSlot,
+  NextEventInfo,
+  MealTiming,
+  HealthExpertRecommendation,
+  ProductivityTip
+} from '../models/productivity.models';
 import { DatabaseService } from './database.service';
 
 const INITIAL_QUOTES: Quote[] = [
@@ -37,6 +49,255 @@ const INITIAL_QUOTES: Quote[] = [
     author: 'Jocko Willink',
     category: 'Discipline',
     reflectionPrompt: 'Where can a strict routine give you more free mental headspace later?'
+  }
+];
+
+export const INITIAL_MEAL_TIMINGS: MealTiming[] = [
+  {
+    id: 'meal-1',
+    name: 'Morning Hydration & Electrolytes',
+    timeRange: '05:30 - 06:30',
+    startMinutes: 330,
+    endMinutes: 390,
+    icon: '💧',
+    phase: 'Early Morning',
+    summary: 'Rehydrate neurological tissue immediately upon waking before cognitive work.',
+    idealFoods: ['500ml filtered room-temp water', 'Pinch of Himalayan / Celtic sea salt', 'Fresh lemon squeeze'],
+    foodsToAvoid: ['Immediate caffeine (delay 90-120 min)', 'Sugary juices', 'Processed pastries'],
+    expertGuidance: 'Dr. Andrew Huberman: Rehydration with sodium & potassium supports neuronal action potentials. Delaying caffeine allows natural adenosine clearance and prevents 2 PM crashes.',
+    caffeineAllowed: false,
+    waterIntakeTargetMl: 500
+  },
+  {
+    id: 'meal-2',
+    name: 'Dopamine & Protein Anchor Breakfast',
+    timeRange: '07:30 - 09:00',
+    startMinutes: 450,
+    endMinutes: 540,
+    icon: '🍳',
+    phase: 'Morning',
+    summary: 'High-protein, low-glycemic fuel to stimulate sustained L-tyrosine dopamine synthesis without insulin spikes.',
+    idealFoods: ['30-40g clean protein (pasture-raised eggs, Greek yogurt, or plant isolate)', 'Avocado / healthy fats', 'Wild blueberries (anthocyanins)', 'Raw walnuts'],
+    foodsToAvoid: ['Refined cereals', 'Pancakes / maple syrup', 'White toast', 'High-sugar smoothies'],
+    expertGuidance: 'Dr. Donald Layman & Dr. Peter Attia: Reaching 30g+ protein triggers the leucine threshold for muscle protein synthesis and blunts glucose volatility, preserving razor-sharp morning focus.',
+    caffeineAllowed: true,
+    waterIntakeTargetMl: 350
+  },
+  {
+    id: 'meal-3',
+    name: 'Peak Performance Focus Lunch',
+    timeRange: '12:30 - 13:45',
+    startMinutes: 750,
+    endMinutes: 825,
+    icon: '🥗',
+    phase: 'Midday',
+    summary: 'Fiber-rich complex meal designed to eliminate the notorious afternoon brain fog and postprandial sleepiness.',
+    idealFoods: ['Wild salmon, grilled chicken breast or tempeh', 'Large dark leafy greens salad', 'Extra virgin olive oil (EVOO)', 'Quinoa or sweet potato (moderate carb)', 'Fermented kimchi / kraut'],
+    foodsToAvoid: ['Heavy refined pasta', 'Deep-fried foods', 'White bread sandwiches', 'Sugary sodas / sweetened teas'],
+    expertGuidance: 'Harvard T.H. Chan Public Health: Heavy carbohydrate loads trigger excessive parasympathetic redirection of blood flow to digestion. Emphasize colorful phytonutrients and polyphenol-dense EVOO.',
+    caffeineAllowed: true,
+    waterIntakeTargetMl: 500
+  },
+  {
+    id: 'meal-4',
+    name: 'Afternoon Neural Refresh Snack',
+    timeRange: '16:00 - 16:30',
+    startMinutes: 960,
+    endMinutes: 990,
+    icon: '🥜',
+    phase: 'Afternoon',
+    summary: 'Micronutrient bridge to support neurotransmitter replenishment before the final workday push.',
+    idealFoods: ['Raw walnuts / almonds (omega-3 ALA)', '85%+ dark cacao (theobromine & flavanols)', 'Green tea / matcha (L-theanine for calm alertness)', 'Sliced cucumber with sea salt'],
+    foodsToAvoid: ['Candy bars', 'Coffee after 2-3 PM (caffeine half-life is 5-7 hours)', 'Energy drinks', 'Commercial chips'],
+    expertGuidance: 'Dr. Matthew Walker: Caffeine has a quarter-life of up to 12 hours. Switching to water or herbal teas after 2 PM protects deep stage 3/4 non-REM restorative sleep.',
+    caffeineAllowed: false,
+    waterIntakeTargetMl: 350
+  },
+  {
+    id: 'meal-5',
+    name: 'Restorative Digestion Dinner',
+    timeRange: '19:00 - 20:15',
+    startMinutes: 1140,
+    endMinutes: 1215,
+    icon: '🍲',
+    phase: 'Evening',
+    summary: 'Warm, easily digestible meal allowing complete digestion 2.5-3 hours before bed.',
+    idealFoods: ['Steamed wild fish, lentils or poultry', 'Steamed broccoli / zucchini / asparagus', 'Slow-burning complex carbs (sweet potato / brown rice) to assist tryptophan serotonin conversion', 'Chamomile tea'],
+    foodsToAvoid: ['Spicy dishes (increases core temp)', 'Alcohol (destroys REM sleep architecture)', 'Large red meat steaks', 'Late-night sugary snacks'],
+    expertGuidance: 'Dr. Satchin Panda: The gut microbiome exhibits circadian rhythms. Completing dinner by 8:00 PM allows natural gene expression for cellular repair and autophagy during the overnight fast.',
+    caffeineAllowed: false,
+    waterIntakeTargetMl: 250
+  },
+  {
+    id: 'meal-6',
+    name: 'Circadian Fasting & Cellular Repair',
+    timeRange: '20:30 - 05:30',
+    startMinutes: 1230,
+    endMinutes: 330,
+    icon: '🌙',
+    phase: 'Night Fast',
+    summary: '12-14 hour overnight time-restricted fasting window for metabolic flexibility, autophagy, and growth hormone release.',
+    idealFoods: ['Pure water if thirsty (sips)', 'Herbal teas (chamomile, peppermint, magnesium glycinate)'],
+    foodsToAvoid: ['All caloric food and snacks', 'Late night drinks'],
+    expertGuidance: 'Dr. Valter Longo (USC Longevity Institute): A regular 12-hour overnight fast triggers cellular housekeeping (autophagy), improves insulin sensitivity, and lowers systemic inflammatory markers.',
+    caffeineAllowed: false,
+    waterIntakeTargetMl: 150
+  }
+];
+
+export const INITIAL_HEALTH_RECOMMENDATIONS: HealthExpertRecommendation[] = [
+  {
+    id: 'rec-1',
+    title: 'The 90-Minute Caffeine Delay Protocol',
+    expert: 'Dr. Andrew Huberman',
+    roleAndInstitution: 'Professor of Neurobiology, Stanford School of Medicine',
+    category: 'Energy Crash Prevention',
+    keyRule: 'Delay caffeine consumption for 90 to 120 minutes after waking up.',
+    actionableProtocol: 'Upon waking, drink 500ml water with sea salt and get 10 minutes of direct morning sunlight. Let natural cortisol rise to clear lingering adenosine. Enjoy your first coffee around 8:00 AM.',
+    scientificMechanism: 'Adenosine builds sleep pressure. If you block adenosine receptors with caffeine immediately, the adenosine waits; once caffeine clears, all queued adenosine floods receptors, causing the severe 2 PM afternoon crash.',
+    impactBadge: 'Prevents Afternoon Fatigue',
+    icon: '☕',
+    color: 'emerald'
+  },
+  {
+    id: 'rec-2',
+    title: 'Time-Restricted Feeding for Autophagy',
+    expert: 'Dr. Satchin Panda',
+    roleAndInstitution: 'Lead Circadian Biologist, Salk Institute for Biological Studies',
+    category: 'Circadian Fasting',
+    keyRule: 'Restrict all caloric consumption to a consistent 10-12 hour daily window.',
+    actionableProtocol: 'If your first bite is at 8:00 AM, finish dinner by 7:00 PM. Leave a minimum of 2-3 hours between your last bite of food and your head touching the pillow.',
+    scientificMechanism: 'Every organ and gut cell operates on clock genes. Constant feeding keeps metabolic machinery working 24/7. Fasting for 12-14 hours activates autophagy (cellular recycling) and mitochondrial rejuvenation.',
+    impactBadge: 'Mitochondrial Repair',
+    icon: '⏳',
+    color: 'indigo'
+  },
+  {
+    id: 'rec-3',
+    title: 'The 30g Morning Protein Anchor',
+    expert: 'Dr. Peter Attia & Dr. Donald Layman',
+    roleAndInstitution: 'Longevity Medicine & Nutritional Biochemistry Experts',
+    category: 'Cognitive Fuel',
+    keyRule: 'Consume 30-40 grams of bioavailable protein in your first meal of the day.',
+    actionableProtocol: 'Build breakfast around eggs, smoked salmon, whey/pea isolate, or Greek yogurt. Avoid naked carbohydrates like bagels, pastries, and instant oatmeal.',
+    scientificMechanism: '30g of protein provides 2.5-3g of leucine to activate mTOR in muscle and flood the brain with L-tyrosine (dopamine/norepinephrine precursor), providing 4-5 hours of steady, distraction-free executive function.',
+    impactBadge: 'Dopamine & Focus Stability',
+    icon: '🍳',
+    color: 'amber'
+  },
+  {
+    id: 'rec-4',
+    title: 'The Bodyweight Hydration & Sodium Rule',
+    expert: 'Dr. Stacy Sims & Dr. Andy Galpin',
+    roleAndInstitution: 'Human Performance & Exercise Physiology Researchers',
+    category: 'Hydration Science',
+    keyRule: 'Drink 30-35ml of water per kg of body weight, frontloaded before 4:00 PM.',
+    actionableProtocol: 'A 70kg person needs ~2.4L daily. Add a pinch of unprocessed salt or electrolytes to your morning water to aid cellular hydration instead of rapid excretion.',
+    scientificMechanism: 'Just 1-2% dehydration impairs working memory, processing speed, and executive decision-making by up to 15%. Sodium maintains plasma volume and intracellular osmotic balance.',
+    impactBadge: 'Cognitive Speed',
+    icon: '💧',
+    color: 'sky'
+  },
+  {
+    id: 'rec-5',
+    title: 'The 3-Hour Pre-Sleep Kitchen Curfew',
+    expert: 'Dr. Matthew Walker',
+    roleAndInstitution: 'Director of Center for Human Sleep Science, UC Berkeley',
+    category: 'Gut-Brain Axis',
+    keyRule: 'Cease all food intake at least 3 hours prior to sleep bedtime.',
+    actionableProtocol: 'If your target bedtime is 10:30 PM, your dinner should conclude by 7:30 PM. Swap late-night fridge raiding for magnesium L-threonate or chamomile.',
+    scientificMechanism: 'Active digestion keeps core body temperature elevated and elevates resting heart rate. Sleep onset requires core temperature to drop by ~1°C; eating late prevents deep slow-wave NREM and REM restorative cycles.',
+    impactBadge: 'Deep Sleep Architecture',
+    icon: '🌙',
+    color: 'purple'
+  }
+];
+
+export const INITIAL_PRODUCTIVITY_TIPS: ProductivityTip[] = [
+  {
+    id: 'tip-1',
+    title: 'The 90-Minute Ultradian Rhythm Cycle',
+    subtitle: 'Synchronize high-friction deep work with your brain’s biological energy waves.',
+    source: 'Dr. Nathaniel Kleitman & Dr. K. Anders Ericsson Research',
+    category: 'Energy Cycles',
+    mechanism: 'The human brain operates in 90-minute BRAC (Basic Rest-Activity Cycle) waves of peak neural vigilance, followed by a 15-20 minute trough of mental fatigue.',
+    actionableSteps: [
+      'Choose ONE single high-leverage objective before starting.',
+      'Set an uninterrupted 90-minute timer; close email, Slack, and browser tabs.',
+      'When the timer rings, step completely away from screens for 10-15 minutes (walk, hydrate, or gaze out a window).'
+    ],
+    timeInvestment: '90m Focus + 15m Reset',
+    impactRating: '10x Multiplier',
+    icon: '⚡',
+    badgeText: 'Science-Backed Focus'
+  },
+  {
+    id: 'tip-2',
+    title: 'The 2-Minute Gateway Rule',
+    subtitle: 'Eliminate micro-friction and cognitive residue before it accumulates.',
+    source: 'David Allen, Getting Things Done (GTD)',
+    category: 'Execution Speed',
+    mechanism: 'Mental tasks lingering in working memory trigger the Zeigarnik effect, creating chronic background anxiety and cognitive drag.',
+    actionableSteps: [
+      'When reviewing reminders, messages, or incoming tasks: if it takes under 2 minutes, execute it right now.',
+      'Do not write it down, do not postpone, do not bookmark.',
+      'Instantly clears cognitive headspace for creative and strategic priorities.'
+    ],
+    timeInvestment: '< 2 Minutes',
+    impactRating: 'Daily Essential',
+    icon: '⏱️',
+    badgeText: 'Instant Clarity'
+  },
+  {
+    id: 'tip-3',
+    title: 'Timeboxing Over Open-Ended To-Do Lists',
+    subtitle: 'Convert vague task intentions into concrete temporal calendar reservations.',
+    source: 'Harvard Business Review Top Productivity Method Analysis',
+    category: 'Time Architecture',
+    mechanism: 'To-do lists create choice fatigue and bias toward trivial low-effort tasks. Timeboxing creates visual accountability and realistic capacity constraints.',
+    actionableSteps: [
+      'Identify your 2 most critical outcomes for today.',
+      'Assign an exact start and end time on your calendar (e.g. 09:00 - 11:00).',
+      'Treat that calendar block with the same non-negotiable sanctity as a meeting with an executive.'
+    ],
+    timeInvestment: '5m Daily Planning',
+    impactRating: '10x Multiplier',
+    icon: '📅',
+    badgeText: 'HBR #1 Strategy'
+  },
+  {
+    id: 'tip-4',
+    title: 'Parkinson’s Law Artificial Time Compression',
+    subtitle: 'Ration allotted time to force clarity and ruthless elimination of perfectionism.',
+    source: 'Cyril Northcote Parkinson & Tim Ferriss (4-Hour Workweek)',
+    category: 'Execution Speed',
+    mechanism: 'Work automatically expands to fill the temporal space allocated for its completion. Halving time constraints strips away unnecessary decorative fluff.',
+    actionableSteps: [
+      'For your next project or presentation, cut your estimated deadline in half.',
+      'Identify the 20% of inputs that produce 80% of the required business value.',
+      'Work with fierce urgency to deliver a robust v1 rather than over-polishing.'
+    ],
+    timeInvestment: 'Instant Shift',
+    impactRating: 'High Impact',
+    icon: '🚀',
+    badgeText: 'Speed & Elimination'
+  },
+  {
+    id: 'tip-5',
+    title: 'Batch Communications & Context Defense',
+    subtitle: 'Protect deep attention by confining messaging to 2 designated daily windows.',
+    source: 'Cal Newport, Deep Work & Dr. Gloria Mark Attention Studies',
+    category: 'Focus Mastery',
+    mechanism: 'Studies show it takes an average of 23 minutes and 15 seconds to fully regain deep focus after a single message interruption.',
+    actionableSteps: [
+      'Process incoming emails and team chats strictly in 2 batches (e.g. 11:30 AM and 4:30 PM).',
+      'Close communication clients and disable notifications during your deep work hours.',
+      'Set expectations with teammates that asynchronous responses occur within 2-4 hours, not 2-4 minutes.'
+    ],
+    timeInvestment: 'Saves 2+ Hours Daily',
+    impactRating: '10x Multiplier',
+    icon: '🛡️',
+    badgeText: 'Attention Shield'
   }
 ];
 
@@ -89,6 +350,90 @@ export class ProductivityService {
   autoCleanupEnabled = signal<boolean>(true);
   totalAutoCleanedEvents = signal<number>(0);
   lastAutoCleanedTimestamp = signal<string>('');
+
+  // Diet, health, and productivity tip signals
+  private readonly STORAGE_MEALS = 'chronos_angular_meals';
+  mealTimings = signal<MealTiming[]>(INITIAL_MEAL_TIMINGS);
+  healthExpertRecommendations = signal<HealthExpertRecommendation[]>(INITIAL_HEALTH_RECOMMENDATIONS);
+  productivityTips = signal<ProductivityTip[]>(INITIAL_PRODUCTIVITY_TIPS);
+  currentTipIndex = signal<number>(0);
+  consumedMeals = signal<Record<string, boolean>>(this.loadConsumedMeals());
+  targetWaterGlasses = signal<number>(8);
+
+  topProductivityTip = computed<ProductivityTip>(() => {
+    const list = this.productivityTips();
+    if (!list || list.length === 0) return INITIAL_PRODUCTIVITY_TIPS[0];
+    const idx = Math.abs(this.currentTipIndex()) % list.length;
+    return list[idx] || list[0];
+  });
+
+  currentMealStatus = computed(() => {
+    const now = this.currentTime();
+    const currentMins = now.getHours() * 60 + now.getMinutes();
+    const meals = this.mealTimings();
+
+    // Check if a meal window is actively open
+    for (const m of meals) {
+      if (m.startMinutes < m.endMinutes) {
+        if (currentMins >= m.startMinutes && currentMins < m.endMinutes) {
+          const remainingMins = m.endMinutes - currentMins;
+          return {
+            activeMeal: m,
+            status: 'active' as const,
+            minutesRemaining: remainingMins,
+            label: `Active Window: ${m.name}`,
+            countdownText: `${remainingMins}m left in window`,
+            nextMeal: null as MealTiming | null
+          };
+        }
+      } else {
+        // Overnight window
+        if (currentMins >= m.startMinutes || currentMins < m.endMinutes) {
+          let remainingMins = 0;
+          if (currentMins >= m.startMinutes) {
+            remainingMins = (1440 - currentMins) + m.endMinutes;
+          } else {
+            remainingMins = m.endMinutes - currentMins;
+          }
+          return {
+            activeMeal: m,
+            status: 'active' as const,
+            minutesRemaining: remainingMins,
+            label: `Active Window: ${m.name}`,
+            countdownText: `${Math.floor(remainingMins / 60)}h ${remainingMins % 60}m left`,
+            nextMeal: null as MealTiming | null
+          };
+        }
+      }
+    }
+
+    // Find next upcoming meal
+    let nextMeal: MealTiming | null = null;
+    let minDiff = Infinity;
+    for (const m of meals) {
+      let diff = m.startMinutes - currentMins;
+      if (diff < 0) {
+        diff += 1440;
+      }
+      if (diff < minDiff && diff > 0) {
+        minDiff = diff;
+        nextMeal = m;
+      }
+    }
+
+    const hours = Math.floor(minDiff / 60);
+    const mins = minDiff % 60;
+    const countdown = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+
+    return {
+      activeMeal: null as MealTiming | null,
+      status: 'upcoming' as const,
+      minutesRemaining: minDiff,
+      label: nextMeal ? `Upcoming: ${nextMeal.name}` : 'Next Window',
+      countdownText: `Starts in ${countdown} (${nextMeal?.timeRange || ''})`,
+      nextMeal
+    };
+  });
 
   nextEvent = computed<NextEventInfo | null>(() => {
     return this.computeNextEvent();
@@ -775,6 +1120,41 @@ export class ProductivityService {
     this.stats.update(st => ({ ...st, waterGlasses: st.waterGlasses + 1 }));
     this.saveToStorage(this.STORAGE_STATS, this.stats());
     await this.db.saveDailyStats(this.stats());
+  }
+
+  async decrementHydration() {
+    this.stats.update(st => ({ ...st, waterGlasses: Math.max(0, st.waterGlasses - 1) }));
+    this.saveToStorage(this.STORAGE_STATS, this.stats());
+    await this.db.saveDailyStats(this.stats());
+  }
+
+  async resetHydration() {
+    this.stats.update(st => ({ ...st, waterGlasses: 0 }));
+    this.saveToStorage(this.STORAGE_STATS, this.stats());
+    await this.db.saveDailyStats(this.stats());
+  }
+
+  rotateProductivityTip() {
+    const list = this.productivityTips();
+    if (list.length > 1) {
+      this.currentTipIndex.update(idx => (idx + 1) % list.length);
+    }
+  }
+
+  toggleMealConsumed(mealId: string) {
+    this.consumedMeals.update(m => {
+      const next = { ...m, [mealId]: !m[mealId] };
+      this.saveToStorage(this.STORAGE_MEALS, next);
+      return next;
+    });
+  }
+
+  private loadConsumedMeals(): Record<string, boolean> {
+    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(this.STORAGE_MEALS) : null;
+    if (raw) {
+      try { return JSON.parse(raw); } catch {}
+    }
+    return {};
   }
 
   // Quotes (Dynamic DB backed)

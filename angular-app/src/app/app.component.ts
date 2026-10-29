@@ -8,6 +8,7 @@ import { RemindersComponent } from './components/reminders.component';
 import { QuickBreaksComponent } from './components/quick-breaks.component';
 import { QuotesComponent } from './components/quotes.component';
 import { QuickAddModalComponent } from './components/quick-add-modal.component';
+import { DietComponent } from './components/diet.component';
 
 @Component({
   selector: 'app-root',
@@ -20,7 +21,8 @@ import { QuickAddModalComponent } from './components/quick-add-modal.component';
     RemindersComponent,
     QuickBreaksComponent,
     QuotesComponent,
-    QuickAddModalComponent
+    QuickAddModalComponent,
+    DietComponent
   ],
   template: `
     <div class="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans">
@@ -42,6 +44,9 @@ import { QuickAddModalComponent } from './components/quick-add-modal.component';
           }
           @case ('quotes') {
             <app-quotes />
+          }
+          @case ('diet') {
+            <app-diet />
           }
         }
       </main>

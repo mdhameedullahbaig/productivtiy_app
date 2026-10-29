@@ -123,8 +123,109 @@ import { AudioService } from '../services/audio.service';
           >
             <span>Explore Quotes Library →</span>
           </button>
-        </div>
-      </div>
+      <!-- Top Productivity Tip of the Day Spotlight -->
+      @if (service.topProductivityTip(); as tip) {
+        <section class="bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-950 text-white rounded-2xl p-6 shadow-md border border-indigo-800/60 relative overflow-hidden">
+          <!-- Subtle decorative glow -->
+          <div class="absolute -right-12 -top-12 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+          <div class="relative space-y-4">
+            <!-- Row 1: Badges & Controls -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-mono font-bold uppercase tracking-wider bg-amber-400 text-slate-950 shadow-2xs">
+                  <span>💡 TOP PRODUCTIVITY STRATEGY</span>
+                </span>
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold bg-white/10 text-indigo-200 border border-white/10">
+                  {{ tip.category }}
+                </span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                  {{ tip.impactRating }}
+                </span>
+              </div>
+
+              <!-- Action Controls -->
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  (click)="speakTip()"
+                  class="px-3 py-1.5 text-xs font-medium rounded-lg bg-white/10 hover:bg-white/20 text-white border border-white/15 transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                  title="Listen to this productivity technique"
+                >
+                  <span>🔊 Listen</span>
+                </button>
+                <button
+                  type="button"
+                  (click)="copyTip()"
+                  class="px-3 py-1.5 text-xs font-medium rounded-lg bg-white/10 hover:bg-white/20 text-white border border-white/15 transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                  title="Copy strategy to clipboard"
+                >
+                  <span>{{ isTipCopied() ? '✓ Copied' : '📋 Copy' }}</span>
+                </button>
+                <button
+                  type="button"
+                  (click)="service.rotateProductivityTip()"
+                  class="px-3 py-1.5 text-xs font-medium rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                  title="Cycle to next top productivity technique"
+                >
+                  <span>↻ Next Tip</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Row 2: Title & Subtitle -->
+            <div>
+              <div class="flex items-center gap-3">
+                <span class="text-3xl shrink-0">{{ tip.icon }}</span>
+                <div>
+                  <h2 class="text-lg sm:text-xl font-bold tracking-tight text-white leading-snug">
+                    {{ tip.title }}
+                  </h2>
+                  <p class="text-xs sm:text-sm text-indigo-200 mt-0.5 leading-relaxed">
+                    {{ tip.subtitle }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Row 3: Mechanism & Actionable Protocol Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+              <div class="bg-white/5 border border-white/10 rounded-xl p-3.5 space-y-1">
+                <span class="text-[10px] uppercase font-mono font-bold tracking-wider text-amber-300 block">
+                  Scientific Mechanism
+                </span>
+                <p class="text-xs text-indigo-100/90 leading-relaxed">
+                  {{ tip.mechanism }}
+                </p>
+                <div class="text-[10px] text-indigo-300 font-mono pt-1">
+                  Research: {{ tip.source }}
+                </div>
+              </div>
+
+              <div class="md:col-span-2 bg-white/5 border border-white/10 rounded-xl p-3.5 space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] uppercase font-mono font-bold tracking-wider text-emerald-400">
+                    Execution Steps
+                  </span>
+                  <span class="text-[10px] font-mono text-indigo-300">
+                    Time Investment: {{ tip.timeInvestment }}
+                  </span>
+                </div>
+                <div class="space-y-1.5">
+                  @for (step of tip.actionableSteps; track step; let idx = $index) {
+                    <div class="flex items-start gap-2 text-xs text-slate-200">
+                      <span class="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 flex items-center justify-center text-[10px] font-mono shrink-0 font-bold mt-0.5">
+                        {{ idx + 1 }}
+                      </span>
+                      <span class="leading-relaxed">{{ step }}</span>
+                    </div>
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      }
 
       <!-- Next Event Spotlight Card (High Visibility & Immaculate Alignment) -->
       @if (service.nextEvent(); as next) {
@@ -382,6 +483,213 @@ import { AudioService } from '../services/audio.service';
         </div>
       </div>
 
+      <!-- Diet, Timings, Hydration & Health Recommendations Section -->
+      <section class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-xs space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center text-sm font-bold shadow-2xs">
+                🥗
+              </span>
+              <h3 class="text-base font-bold text-slate-900">
+                Diet, Nutrition Timings & Hydration Intelligence
+              </h3>
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Circadian feeding alignment and cellular hydration protocols for sustained executive focus.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            (click)="service.setTab('diet')"
+            class="px-3.5 py-2 text-xs font-semibold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 self-start sm:self-auto"
+          >
+            <span>Explore Full Diet & Timings Protocol →</span>
+          </button>
+        </div>
+
+        <!-- 3-Card Responsive Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- Card 1: Active Nutrition Timing Window -->
+          <div class="bg-slate-50 border border-slate-200/90 rounded-xl p-4 flex flex-col justify-between space-y-3">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between gap-2">
+                <span
+                  class="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+                  [class]="service.currentMealStatus().status === 'active' 
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' 
+                    : 'bg-indigo-50 text-indigo-800 border border-indigo-200'"
+                >
+                  {{ service.currentMealStatus().status === 'active' ? 'Active Window' : 'Next Feeding' }}
+                </span>
+                <span class="text-xs font-mono font-bold text-slate-700">
+                  {{ service.currentMealStatus().activeMeal ? service.currentMealStatus().activeMeal?.timeRange : service.currentMealStatus().nextMeal?.timeRange }}
+                </span>
+              </div>
+
+              <div class="flex items-start gap-2.5">
+                <span class="text-2xl shrink-0">
+                  {{ service.currentMealStatus().activeMeal ? service.currentMealStatus().activeMeal?.icon : (service.currentMealStatus().nextMeal?.icon || '🥗') }}
+                </span>
+                <div class="min-w-0">
+                  <h4 class="text-sm font-bold text-slate-900 truncate">
+                    {{ service.currentMealStatus().activeMeal ? service.currentMealStatus().activeMeal?.name : (service.currentMealStatus().nextMeal?.name || 'Upcoming Window') }}
+                  </h4>
+                  <div class="text-[11px] font-mono font-semibold text-emerald-700 mt-0.5">
+                    {{ service.currentMealStatus().countdownText }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Recommended Foods Quick Pills -->
+              @if (service.currentMealStatus().activeMeal; as m) {
+                <div class="text-[11px] text-slate-600 bg-white rounded-lg p-2.5 border border-slate-200 space-y-1">
+                  <span class="font-semibold text-slate-700 block text-[10px] uppercase font-mono">Nutrient Focus:</span>
+                  <div class="flex flex-wrap gap-1">
+                    @for (food of m.idealFoods.slice(0, 2); track food) {
+                      <span class="text-[10px] bg-emerald-50 text-emerald-900 px-1.5 py-0.5 rounded font-medium">
+                        {{ food }}
+                      </span>
+                    }
+                  </div>
+                </div>
+              } @else {
+                @if (service.currentMealStatus().nextMeal; as nm) {
+                  <div class="text-[11px] text-slate-600 bg-white rounded-lg p-2.5 border border-slate-200 space-y-1">
+                    <span class="font-semibold text-slate-700 block text-[10px] uppercase font-mono">Upcoming Fuel:</span>
+                    <div class="flex flex-wrap gap-1">
+                      @for (food of nm.idealFoods.slice(0, 2); track food) {
+                        <span class="text-[10px] bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded font-medium">
+                          {{ food }}
+                        </span>
+                      }
+                    </div>
+                  </div>
+                }
+              }
+            </div>
+
+            <!-- Card footer action -->
+            @if (service.currentMealStatus().activeMeal; as m) {
+              <button
+                type="button"
+                (click)="toggleActiveMeal(m.id)"
+                class="w-full py-1.5 px-3 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+                [class]="isMealConsumed(m.id) 
+                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' 
+                  : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-100'"
+              >
+                <span>{{ isMealConsumed(m.id) ? '✓ Marked Consumed' : '○ Mark As Consumed' }}</span>
+              </button>
+            } @else {
+              <div class="text-[10px] font-mono text-slate-400 text-center py-1">
+                Currently in restorative digestion interval
+              </div>
+            }
+          </div>
+
+          <!-- Card 2: Interactive Hydration Tracker -->
+          <div class="bg-sky-50/60 border border-sky-100 rounded-xl p-4 flex flex-col justify-between space-y-3">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-mono font-bold uppercase tracking-wider text-sky-800 bg-sky-100 px-2 py-0.5 rounded-full border border-sky-200">
+                  Hydration Target
+                </span>
+                <span class="text-xs font-mono font-bold text-sky-950">
+                  {{ service.stats().waterGlasses * 250 }}ml / 2,000ml
+                </span>
+              </div>
+
+              <div class="flex items-baseline justify-between pt-1">
+                <div>
+                  <div class="text-2xl font-bold font-mono text-sky-950">
+                    {{ service.stats().waterGlasses }} <span class="text-xs font-normal text-sky-700">/ {{ service.targetWaterGlasses() }} glasses</span>
+                  </div>
+                  <div class="text-[11px] text-sky-800 font-mono mt-0.5">
+                    {{ hydrationPercentage() }}% of daily cellular baseline
+                  </div>
+                </div>
+                <div class="text-3xl">💧</div>
+              </div>
+
+              <!-- Progress bar -->
+              <div class="w-full bg-sky-100 h-2.5 rounded-full overflow-hidden border border-sky-200">
+                <div
+                  class="bg-sky-500 h-full rounded-full transition-all duration-300"
+                  [style.width]="hydrationPercentage() + '%'"
+                ></div>
+              </div>
+            </div>
+
+            <!-- Quick Water Actions -->
+            <div class="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                (click)="logWater()"
+                class="flex-1 py-1.5 px-3 text-xs font-semibold rounded-lg text-white bg-sky-600 hover:bg-sky-700 active:bg-sky-800 transition-colors cursor-pointer shadow-2xs flex items-center justify-center gap-1"
+              >
+                <span>+1 Glass</span>
+              </button>
+              <button
+                type="button"
+                (click)="decrementWater()"
+                class="py-1.5 px-2.5 text-xs font-medium rounded-lg border border-sky-200 bg-white hover:bg-sky-50 text-sky-800 transition-colors cursor-pointer"
+                title="Subtract 1 glass"
+              >
+                <span>-1</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Card 3: Health Expert Recommendation Spotlight -->
+          @if (featuredExpertRec(); as rec) {
+            <div class="bg-slate-50 border border-slate-200/90 rounded-xl p-4 flex flex-col justify-between space-y-3">
+              <div class="space-y-2">
+                <div class="flex items-center justify-between gap-1">
+                  <span class="text-[10px] font-mono font-bold uppercase tracking-wider text-purple-800 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200">
+                    {{ rec.category }}
+                  </span>
+                  <span class="text-[10px] font-mono font-bold text-emerald-800">
+                    {{ rec.impactBadge }}
+                  </span>
+                </div>
+
+                <div>
+                  <h4 class="text-xs font-bold text-slate-900 leading-snug">
+                    {{ rec.title }}
+                  </h4>
+                  <div class="text-[10px] font-mono text-slate-500 mt-0.5">
+                    {{ rec.expert }} · {{ rec.roleAndInstitution.split(',')[0] }}
+                  </div>
+                </div>
+
+                <div class="p-2.5 bg-white rounded-lg border border-slate-200 text-xs text-slate-700 leading-relaxed shadow-2xs">
+                  “{{ rec.keyRule }}”
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between pt-1">
+                <button
+                  type="button"
+                  (click)="listenToExpert(rec)"
+                  class="text-xs font-medium text-slate-700 hover:text-slate-900 flex items-center gap-1 cursor-pointer"
+                >
+                  <span>🔊 Listen</span>
+                </button>
+                <button
+                  type="button"
+                  (click)="service.setTab('diet')"
+                  class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 cursor-pointer"
+                >
+                  All 5 Protocols →
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+
       <!-- Quick Launch Break Bar -->
       <section class="bg-indigo-50/80 border border-indigo-200/80 rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
         <div class="flex items-center gap-3.5">
@@ -425,6 +733,18 @@ export class DashboardComponent {
   todayReminders = computed(() => this.service.reminders().filter(r => r.dueDate === this.todayDateStr));
 
   isCopied = signal(false);
+  isTipCopied = signal(false);
+
+  hydrationPercentage = computed(() => {
+    const current = this.service.stats().waterGlasses;
+    const target = this.service.targetWaterGlasses();
+    return Math.min(100, Math.round((current / target) * 100));
+  });
+
+  featuredExpertRec = computed(() => {
+    const list = this.service.healthExpertRecommendations();
+    return list && list.length > 0 ? list[0] : null;
+  });
 
   speakQuote() {
     const q = this.service.quoteOfTheDay();
@@ -436,6 +756,41 @@ export class DashboardComponent {
     navigator.clipboard.writeText(`"${q.text}" — ${q.author}`);
     this.isCopied.set(true);
     setTimeout(() => this.isCopied.set(false), 2000);
+  }
+
+  speakTip() {
+    const tip = this.service.topProductivityTip();
+    this.audio.speakText(`${tip.title}. ${tip.subtitle}. Strategy: ${tip.mechanism}. Execution: ${tip.actionableSteps.join('. ')}`);
+  }
+
+  copyTip() {
+    const tip = this.service.topProductivityTip();
+    const text = `${tip.title}\n${tip.subtitle}\n\nMechanism:\n${tip.mechanism}\n\nExecution:\n${tip.actionableSteps.map((s, i) => `${i + 1}. ${s}`).join('\n')}\n\nSource: ${tip.source}`;
+    navigator.clipboard.writeText(text);
+    this.isTipCopied.set(true);
+    setTimeout(() => this.isTipCopied.set(false), 2000);
+  }
+
+  listenToExpert(rec: any) {
+    this.audio.speakText(`${rec.title}. Protocol by ${rec.expert}. ${rec.keyRule}. ${rec.actionableProtocol}`);
+  }
+
+  logWater() {
+    this.audio.playTick();
+    this.service.logHydration();
+  }
+
+  decrementWater() {
+    this.service.decrementHydration();
+  }
+
+  isMealConsumed(mealId: string): boolean {
+    return !!this.service.consumedMeals()[mealId];
+  }
+
+  toggleActiveMeal(mealId: string) {
+    this.audio.playSuccessChime();
+    this.service.toggleMealConsumed(mealId);
   }
 
   toggleReminder(id: string) {

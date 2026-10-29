@@ -57,7 +57,51 @@ export interface DailyStats {
   lastActiveDate: string;
 }
 
-export type ViewTab = 'dashboard' | 'calendar' | 'reminders' | 'breaks' | 'quotes';
+export type ViewTab = 'dashboard' | 'calendar' | 'reminders' | 'breaks' | 'quotes' | 'diet';
+
+export interface MealTiming {
+  id: string;
+  name: string;
+  timeRange: string;
+  startMinutes: number; // minutes from midnight
+  endMinutes: number;   // minutes from midnight
+  icon: string;
+  phase: 'Early Morning' | 'Morning' | 'Midday' | 'Afternoon' | 'Evening' | 'Night Fast';
+  summary: string;
+  idealFoods: string[];
+  foodsToAvoid: string[];
+  expertGuidance: string;
+  caffeineAllowed: boolean;
+  waterIntakeTargetMl: number;
+}
+
+export interface HealthExpertRecommendation {
+  id: string;
+  title: string;
+  expert: string;
+  roleAndInstitution: string;
+  category: 'Circadian Fasting' | 'Cognitive Fuel' | 'Hydration Science' | 'Gut-Brain Axis' | 'Energy Crash Prevention';
+  keyRule: string;
+  actionableProtocol: string;
+  scientificMechanism: string;
+  impactBadge: string;
+  icon: string;
+  color: string;
+}
+
+export interface ProductivityTip {
+  id: string;
+  title: string;
+  subtitle: string;
+  source: string;
+  category: 'Focus Mastery' | 'Time Architecture' | 'Cognitive Load' | 'Energy Cycles' | 'Execution Speed';
+  mechanism: string;
+  actionableSteps: string[];
+  timeInvestment: string;
+  impactRating: '10x Multiplier' | 'High Impact' | 'Daily Essential';
+  icon: string;
+  badgeText: string;
+}
 
 export interface FreeTimeSlot {
   startTime: string; // HH:mm

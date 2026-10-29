@@ -75,6 +75,16 @@ import { ViewTab } from '../models/productivity.models';
           >
             Quotes
           </button>
+
+          <button
+            (click)="service.setTab('diet')"
+            [class.bg-slate-100]="service.currentTab() === 'diet'"
+            [class.text-slate-900]="service.currentTab() === 'diet'"
+            [class.font-semibold]="service.currentTab() === 'diet'"
+            class="px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5"
+          >
+            <span>🥗 Diet & Health</span>
+          </button>
         </nav>
 
         <!-- Zone 3: Primary Action -->
