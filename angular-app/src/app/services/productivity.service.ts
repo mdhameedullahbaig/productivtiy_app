@@ -14,20 +14,158 @@ import {
 } from '../models/productivity.models';
 import { DatabaseService } from './database.service';
 
-const INITIAL_QUOTES: Quote[] = [
+export const INITIAL_QUOTES: Quote[] = [
+  // --- DISCIPLINE WISDOM ---
+  {
+    id: 'q-disc-1',
+    text: 'Discipline equals freedom. It is not the restriction of your life, but the very mechanism that grants you autonomy over your destiny.',
+    author: 'Jocko Willink',
+    category: 'Discipline',
+    reflectionPrompt: 'Where can establishing a strict, non-negotiable rule liberate your energy from continuous decision fatigue?'
+  },
+  {
+    id: 'q-disc-2',
+    text: 'You could be good today, but instead you choose tomorrow.',
+    author: 'Marcus Aurelius',
+    category: 'Discipline',
+    reflectionPrompt: 'What task or standard have you been pushing off to tomorrow that you can execute in the next 15 minutes?'
+  },
+  {
+    id: 'q-disc-3',
+    text: 'We must all suffer one of two things: the pain of discipline or the pain of regret. Discipline weighs ounces; regret weighs tons.',
+    author: 'Jim Rohn',
+    category: 'Discipline',
+    reflectionPrompt: 'Will temporary discomfort right now feel worse than looking back weeks from now with disappointment?'
+  },
+  {
+    id: 'q-disc-4',
+    text: 'How long are you going to wait before you demand the best for yourself, and in no instance bypass the discriminations of reason?',
+    author: 'Epictetus',
+    category: 'Discipline',
+    reflectionPrompt: 'What standard are you tolerating in your work or habits that falls below your true capability?'
+  },
+  {
+    id: 'q-disc-5',
+    text: 'Discipline is choosing between what you want now and what you want most.',
+    author: 'Abraham Lincoln',
+    category: 'Discipline',
+    reflectionPrompt: 'What short-term dopamine trap or comfort must you decline right now to protect your primary goal?'
+  },
+  {
+    id: 'q-disc-6',
+    text: 'Self-discipline is the ability to do what you should do, when you should do it, whether you feel like it or not.',
+    author: 'Brian Tracy',
+    category: 'Discipline',
+    reflectionPrompt: 'Notice if you are waiting for emotional motivation. Act first, and let momentum follow action.'
+  },
+  {
+    id: 'q-disc-7',
+    text: 'Fix your mind on the work at hand. Do not let your spirit slacken for a single instant, and do nothing that is of no use.',
+    author: 'Miyamoto Musashi',
+    category: 'Discipline',
+    reflectionPrompt: 'Scan your current desk and open browser tabs. Which items are of no use to your mission today?'
+  },
+  {
+    id: 'q-disc-8',
+    text: 'Only the disciplined ones in life are free. If you are undisciplined, you are a slave to your moods and your passions.',
+    author: 'Eliud Kipchoge',
+    category: 'Discipline',
+    reflectionPrompt: 'Are you running your schedule today, or are transient moods dictating your productivity?'
+  },
+  {
+    id: 'q-disc-9',
+    text: 'I fear not the man who has practiced 10,000 kicks once, but I fear the man who has practiced one kick 10,000 times.',
+    author: 'Bruce Lee',
+    category: 'Discipline',
+    reflectionPrompt: 'What core skill or routine do you need to practice with relentless repetition rather than chasing novelty?'
+  },
+  {
+    id: 'q-disc-10',
+    text: 'The superior person is disciplined in speech and energetic in action; they act before they speak, and afterwards speak according to their actions.',
+    author: 'Confucius',
+    category: 'Discipline',
+    reflectionPrompt: 'Stop announcing your intentions. Let your completed output speak for itself.'
+  },
+
+  // --- TIME IMPORTANCE & TIME MASTERY WISDOM ---
+  {
+    id: 'q-time-1',
+    text: 'People are frugal in guarding their personal property; but as soon as it comes to squandering time they are most wasteful of the one thing in which it is right to be stingy.',
+    author: 'Seneca',
+    category: 'Time Mastery',
+    reflectionPrompt: 'If someone attempted to steal your bank balance, you would fight them. Why allow trivial distractions to steal your irreplaceable hours?'
+  },
+  {
+    id: 'q-time-2',
+    text: 'Time is the scarcest resource and unless it is managed nothing else can be managed.',
+    author: 'Peter Drucker',
+    category: 'Time Mastery',
+    reflectionPrompt: 'Have you explicitly reserved dedicated calendar blocks for what truly moves the needle today?'
+  },
+  {
+    id: 'q-time-3',
+    text: 'Time is the coin of your life. It is the only coin you have, and only you can determine how it will be spent. Be careful lest you let other people spend it for you.',
+    author: 'Carl Sandburg',
+    category: 'Time Mastery',
+    reflectionPrompt: 'Are you reacting to everyone else’s urgent interruptions at the expense of your own vital priorities?'
+  },
+  {
+    id: 'q-time-4',
+    text: 'If you love life, don’t waste time, for time is what life is made up of.',
+    author: 'Bruce Lee',
+    category: 'Time Mastery',
+    reflectionPrompt: 'Treat the remaining hours of today as precious, non-refundable assets.'
+  },
+  {
+    id: 'q-time-5',
+    text: 'Lost time is never found again, and what we call time enough always proves little enough.',
+    author: 'Benjamin Franklin',
+    category: 'Time Mastery',
+    reflectionPrompt: 'What high-leverage initiative can you start right now before the day’s golden hours vanish?'
+  },
+  {
+    id: 'q-time-6',
+    text: 'It is not that we have a short time to live, but that we waste a lot of it. Life is long enough, and sufficiently generous for the highest achievements, if it were all well invested.',
+    author: 'Seneca',
+    category: 'Time Mastery',
+    reflectionPrompt: 'If you reclaimed just 90 minutes of unfocused passive scrolling today, what masterpiece could you build?'
+  },
+  {
+    id: 'q-time-7',
+    text: 'Time is free, but it’s priceless. You can’t own it, but you can use it. You can’t keep it, but you can spend it. Once you’ve lost it, you can never get it back.',
+    author: 'Harvey MacKay',
+    category: 'Time Mastery',
+    reflectionPrompt: 'What is the single most valuable, compounding use of your next 60 minutes?'
+  },
+  {
+    id: 'q-time-8',
+    text: 'The way you spend your hours determines the way you live your years. Protect your prime hours and you protect your destiny.',
+    author: 'Robin Sharma',
+    category: 'Time Mastery',
+    reflectionPrompt: 'How will you intentionally frame your next work block to honor your long-term ambitions?'
+  },
+  {
+    id: 'q-time-9',
+    text: 'Think of yourself as dead. You have lived your life. Now take what’s left and live it properly. Stop letting time drift by like smoke.',
+    author: 'Marcus Aurelius',
+    category: 'Time Mastery',
+    reflectionPrompt: 'If today was the restart of your career, what would you immediately stop doing?'
+  },
+  {
+    id: 'q-time-10',
+    text: 'The two most powerful warriors are patience and time. Great things are accomplished not by violent spasms of effort, but by perseverance across daily time blocks.',
+    author: 'Leo Tolstoy',
+    category: 'Time Mastery',
+    reflectionPrompt: 'Trust the compound effect of showing up focused every single day.'
+  },
+
+  // --- HABITS & FOCUS FOUNDATIONS ---
   {
     id: 'q-1',
     text: 'You do not rise to the level of your goals. You fall to the level of your systems.',
     author: 'James Clear',
     category: 'Habits',
     reflectionPrompt: 'What system in your day needs a minor tweak to make good work effortless?'
-  },
-  {
-    id: 'q-2',
-    text: 'It is not that we have a short time to live, but that we waste a lot of it.',
-    author: 'Seneca',
-    category: 'Clarity',
-    reflectionPrompt: 'Which activity today is consuming your finite attention without giving you value?'
   },
   {
     id: 'q-3',
@@ -42,13 +180,6 @@ const INITIAL_QUOTES: Quote[] = [
     author: 'Cal Newport',
     category: 'Focus',
     reflectionPrompt: 'Protect your next block of time like a sacred reservation.'
-  },
-  {
-    id: 'q-5',
-    text: 'Discipline equals freedom.',
-    author: 'Jocko Willink',
-    category: 'Discipline',
-    reflectionPrompt: 'Where can a strict routine give you more free mental headspace later?'
   }
 ];
 
@@ -526,7 +657,19 @@ export class ProductivityService {
       }
 
       if (dbQuotes && dbQuotes.length > 0) {
-        this.quotes.set(dbQuotes);
+        // Merge in any new initial quotes that aren't yet in IndexedDB
+        const existingIds = new Set(dbQuotes.map(q => q.id));
+        const missing = INITIAL_QUOTES.filter(q => !existingIds.has(q.id));
+        if (missing.length > 0) {
+          const merged = [...dbQuotes, ...missing];
+          this.quotes.set(merged);
+          this.saveToStorage(this.STORAGE_QUOTES, merged);
+          for (const nq of missing) {
+            await this.db.saveQuote(nq);
+          }
+        } else {
+          this.quotes.set(dbQuotes);
+        }
       } else {
         // Seed database with initial quotes
         for (const q of this.quotes()) {
@@ -1260,7 +1403,14 @@ export class ProductivityService {
   private loadInitialQuotes(): Quote[] {
     const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(this.STORAGE_QUOTES) : null;
     if (raw) {
-      try { return JSON.parse(raw); } catch {}
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const existingIds = new Set(parsed.map((q: Quote) => q.id));
+          const missing = INITIAL_QUOTES.filter(q => !existingIds.has(q.id));
+          return missing.length > 0 ? [...parsed, ...missing] : parsed;
+        }
+      } catch {}
     }
     return INITIAL_QUOTES;
   }

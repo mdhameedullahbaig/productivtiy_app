@@ -2,6 +2,7 @@ import { Component, inject, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ProductivityService } from '../services/productivity.service';
 import { AudioService } from '../services/audio.service';
+import { MealTiming, HealthExpertRecommendation } from '../models/productivity.models';
 
 @Component({
   selector: 'app-dashboard',
@@ -73,21 +74,61 @@ import { AudioService } from '../services/audio.service';
       <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-xs">
         <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div class="space-y-2 flex-1">
-            <div class="flex flex-wrap items-center gap-2 text-xs font-mono text-indigo-600">
-              <span class="font-bold">Mindset Anchor</span>
-              <span aria-hidden="true">·</span>
-              <span>{{ service.quoteOfTheDay().category }}</span>
-              <span aria-hidden="true">·</span>
-              <span class="text-slate-500 bg-slate-100 px-2 py-0.5 rounded text-[11px]">
-                Rotates in {{ service.quoteCountdownFormatted() }}
-              </span>
+            <div class="flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+              <div class="flex items-center gap-2">
+                <span
+                  class="px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider text-[11px]"
+                  [class]="service.quoteOfTheDay().category === 'Discipline' 
+                    ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' 
+                    : (service.quoteOfTheDay().category === 'Time Mastery' 
+                        ? 'bg-amber-100 text-amber-900 border border-amber-300' 
+                        : 'bg-indigo-100 text-indigo-900 border border-indigo-300')"
+                >
+                  @if (service.quoteOfTheDay().category === 'Discipline') { ⚔️ }
+                  @else if (service.quoteOfTheDay().category === 'Time Mastery') { ⏳ }
+                  {{ service.quoteOfTheDay().category }}
+                </span>
+                <span class="text-slate-300" aria-hidden="true">·</span>
+                <span class="text-slate-500 font-medium">Mindset Anchor</span>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <span class="text-slate-500 bg-slate-100 px-2 py-0.5 rounded text-[11px] font-mono">
+                  Rotates in {{ service.quoteCountdownFormatted() }}
+                </span>
+                <button
+                  type="button"
+                  (click)="toggleFavoriteQuote(service.quoteOfTheDay().id)"
+                  class="p-1 rounded hover:bg-slate-100 transition-colors cursor-pointer text-sm"
+                  [class]="service.quoteOfTheDay().favorite ? 'text-amber-500 font-bold' : 'text-slate-300 hover:text-amber-400'"
+                  [title]="service.quoteOfTheDay().favorite ? 'Favorited' : 'Add to favorites'"
+                >
+                  <span>{{ service.quoteOfTheDay().favorite ? '★' : '☆' }}</span>
+                </button>
+              </div>
             </div>
-            <p class="text-base sm:text-lg font-medium text-slate-900 leading-relaxed">
+
+            <p class="text-base sm:text-lg font-medium text-slate-900 leading-relaxed font-serif pt-1">
               "{{ service.quoteOfTheDay().text }}"
             </p>
-            <div class="text-xs text-slate-500 font-mono">
+
+            <div class="text-xs text-slate-600 font-mono font-semibold">
               — {{ service.quoteOfTheDay().author }}
             </div>
+
+            @if (service.quoteOfTheDay().reflectionPrompt) {
+              <div class="mt-3 p-3 bg-amber-50/60 border border-amber-200/80 rounded-xl flex items-start gap-2.5">
+                <span class="text-sm shrink-0">💡</span>
+                <div>
+                  <span class="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-900 block">
+                    Daily Reflection
+                  </span>
+                  <p class="text-xs text-amber-950 font-medium leading-relaxed">
+                    {{ service.quoteOfTheDay().reflectionPrompt }}
+                  </p>
+                </div>
+              </div>
+            }
           </div>
         </div>
 
@@ -123,6 +164,9 @@ import { AudioService } from '../services/audio.service';
           >
             <span>Explore Quotes Library →</span>
           </button>
+        </div>
+      </div>
+
       <!-- Top Productivity Tip of the Day Spotlight -->
       @if (service.topProductivityTip(); as tip) {
         <section class="bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-950 text-white rounded-2xl p-6 shadow-md border border-indigo-800/60 relative overflow-hidden">
@@ -212,10 +256,10 @@ import { AudioService } from '../services/audio.service';
                   </span>
                 </div>
                 <div class="space-y-1.5">
-                  @for (step of tip.actionableSteps; track step; let idx = $index) {
+                  @for (step of tip.actionableSteps; track step) {
                     <div class="flex items-start gap-2 text-xs text-slate-200">
                       <span class="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 flex items-center justify-center text-[10px] font-mono shrink-0 font-bold mt-0.5">
-                        {{ idx + 1 }}
+                        {{ $index + 1 }}
                       </span>
                       <span class="leading-relaxed">{{ step }}</span>
                     </div>
@@ -524,17 +568,17 @@ import { AudioService } from '../services/audio.service';
                   {{ service.currentMealStatus().status === 'active' ? 'Active Window' : 'Next Feeding' }}
                 </span>
                 <span class="text-xs font-mono font-bold text-slate-700">
-                  {{ service.currentMealStatus().activeMeal ? service.currentMealStatus().activeMeal?.timeRange : service.currentMealStatus().nextMeal?.timeRange }}
+                  {{ currentMealTimeRange() }}
                 </span>
               </div>
 
               <div class="flex items-start gap-2.5">
                 <span class="text-2xl shrink-0">
-                  {{ service.currentMealStatus().activeMeal ? service.currentMealStatus().activeMeal?.icon : (service.currentMealStatus().nextMeal?.icon || '🥗') }}
+                  {{ currentMealIcon() }}
                 </span>
                 <div class="min-w-0">
                   <h4 class="text-sm font-bold text-slate-900 truncate">
-                    {{ service.currentMealStatus().activeMeal ? service.currentMealStatus().activeMeal?.name : (service.currentMealStatus().nextMeal?.name || 'Upcoming Window') }}
+                    {{ currentMealName() }}
                   </h4>
                   <div class="text-[11px] font-mono font-semibold text-emerald-700 mt-0.5">
                     {{ service.currentMealStatus().countdownText }}
@@ -543,11 +587,11 @@ import { AudioService } from '../services/audio.service';
               </div>
 
               <!-- Recommended Foods Quick Pills -->
-              @if (service.currentMealStatus().activeMeal; as m) {
+              @if (activeMeal(); as m) {
                 <div class="text-[11px] text-slate-600 bg-white rounded-lg p-2.5 border border-slate-200 space-y-1">
                   <span class="font-semibold text-slate-700 block text-[10px] uppercase font-mono">Nutrient Focus:</span>
                   <div class="flex flex-wrap gap-1">
-                    @for (food of m.idealFoods.slice(0, 2); track food) {
+                    @for (food of activeMealFoods(); track food) {
                       <span class="text-[10px] bg-emerald-50 text-emerald-900 px-1.5 py-0.5 rounded font-medium">
                         {{ food }}
                       </span>
@@ -555,11 +599,11 @@ import { AudioService } from '../services/audio.service';
                   </div>
                 </div>
               } @else {
-                @if (service.currentMealStatus().nextMeal; as nm) {
+                @if (nextMeal(); as nm) {
                   <div class="text-[11px] text-slate-600 bg-white rounded-lg p-2.5 border border-slate-200 space-y-1">
                     <span class="font-semibold text-slate-700 block text-[10px] uppercase font-mono">Upcoming Fuel:</span>
                     <div class="flex flex-wrap gap-1">
-                      @for (food of nm.idealFoods.slice(0, 2); track food) {
+                      @for (food of nextMealFoods(); track food) {
                         <span class="text-[10px] bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded font-medium">
                           {{ food }}
                         </span>
@@ -660,7 +704,7 @@ import { AudioService } from '../services/audio.service';
                     {{ rec.title }}
                   </h4>
                   <div class="text-[10px] font-mono text-slate-500 mt-0.5">
-                    {{ rec.expert }} · {{ rec.roleAndInstitution.split(',')[0] }}
+                    {{ rec.expert }} · {{ getInstitution(rec) }}
                   </div>
                 </div>
 
@@ -746,6 +790,28 @@ export class DashboardComponent {
     return list && list.length > 0 ? list[0] : null;
   });
 
+  activeMeal = computed<MealTiming | null>(() => this.service.currentMealStatus().activeMeal);
+  nextMeal = computed<MealTiming | null>(() => this.service.currentMealStatus().nextMeal);
+  activeMealFoods = computed<string[]>(() => this.activeMeal()?.idealFoods.slice(0, 2) || []);
+  nextMealFoods = computed<string[]>(() => this.nextMeal()?.idealFoods.slice(0, 2) || []);
+
+  currentMealTimeRange = computed<string>(() => {
+    return this.activeMeal()?.timeRange || this.nextMeal()?.timeRange || '';
+  });
+
+  currentMealIcon = computed<string>(() => {
+    return this.activeMeal()?.icon || this.nextMeal()?.icon || '🥗';
+  });
+
+  currentMealName = computed<string>(() => {
+    return this.activeMeal()?.name || this.nextMeal()?.name || 'Upcoming Window';
+  });
+
+  getInstitution(rec: HealthExpertRecommendation | null): string {
+    if (!rec) return '';
+    return rec.roleAndInstitution.split(',')[0] || rec.roleAndInstitution;
+  }
+
   speakQuote() {
     const q = this.service.quoteOfTheDay();
     this.audio.speakText(`"${q.text}" by ${q.author}`);
@@ -756,6 +822,10 @@ export class DashboardComponent {
     navigator.clipboard.writeText(`"${q.text}" — ${q.author}`);
     this.isCopied.set(true);
     setTimeout(() => this.isCopied.set(false), 2000);
+  }
+
+  toggleFavoriteQuote(id: string) {
+    this.service.toggleFavoriteQuote(id);
   }
 
   speakTip() {
@@ -771,7 +841,7 @@ export class DashboardComponent {
     setTimeout(() => this.isTipCopied.set(false), 2000);
   }
 
-  listenToExpert(rec: any) {
+  listenToExpert(rec: HealthExpertRecommendation) {
     this.audio.speakText(`${rec.title}. Protocol by ${rec.expert}. ${rec.keyRule}. ${rec.actionableProtocol}`);
   }
 

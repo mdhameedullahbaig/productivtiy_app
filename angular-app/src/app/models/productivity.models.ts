@@ -39,11 +39,13 @@ export interface Reminder {
   snoozedUntil?: string;
 }
 
+export type QuoteCategory = 'Focus' | 'Discipline' | 'Habits' | 'Resilience' | 'Clarity' | 'Mindset' | 'Time Mastery';
+
 export interface Quote {
   id: string;
   text: string;
   author: string;
-  category: 'Focus' | 'Discipline' | 'Habits' | 'Resilience' | 'Clarity' | 'Mindset';
+  category: QuoteCategory;
   reflectionPrompt?: string;
   favorite?: boolean;
 }
