@@ -451,9 +451,9 @@ export class ProductivityService {
   currentTab = signal<ViewTab>('dashboard');
   isDbConnected = signal<boolean>(true);
 
-  // 5-minute quote rotation state (300 seconds)
+  // 1-minute quote rotation state (60 seconds)
   currentQuoteIndex = signal<number>(0);
-  quoteRotationSecondsLeft = signal<number>(300);
+  quoteRotationSecondsLeft = signal<number>(60);
   private quoteTimerInterval: any = null;
 
   // Computed signals
@@ -594,7 +594,7 @@ export class ProductivityService {
   }
 
   /**
-   * Automatically rotates quote every 5 minutes (300 seconds)
+   * Automatically rotates quote every 1 minute (60 seconds)
    */
   startQuoteRotationTimer() {
     if (typeof window === 'undefined') return;
@@ -612,14 +612,14 @@ export class ProductivityService {
   }
 
   /**
-   * Rotates to the next quote and resets the 5-minute countdown
+   * Rotates to the next quote and resets the 1-minute countdown
    */
   rotateQuote() {
     const qList = this.quotes();
     if (qList.length > 1) {
       this.currentQuoteIndex.update(idx => (idx + 1) % qList.length);
     }
-    this.quoteRotationSecondsLeft.set(300);
+    this.quoteRotationSecondsLeft.set(60);
   }
 
   /**

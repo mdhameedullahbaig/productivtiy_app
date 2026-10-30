@@ -362,7 +362,7 @@ export class QuotesComponent {
     const idx = this.service.quotes().findIndex(item => item.id === q.id);
     if (idx !== -1) {
       this.service.currentQuoteIndex.set(idx);
-      this.service.quoteRotationSecondsLeft.set(300);
+      this.service.quoteRotationSecondsLeft.set(60);
     }
   }
 
