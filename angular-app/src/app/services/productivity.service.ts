@@ -477,6 +477,32 @@ export class ProductivityService {
   currentTime = signal<Date>(new Date());
   private clockInterval: any = null;
 
+  // Free time calculation mode: 'currentTime' (default: calculates remaining from current time) vs 'fullDay' (5am-10pm baseline)
+  freeTimeCalculationMode = signal<'currentTime' | 'fullDay'>('currentTime');
+
+  currentTimeFormatted = computed(() => {
+    return this.currentTime().toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  });
+
+  currentTime24Formatted = computed(() => {
+    const d = this.currentTime();
+    const h = String(d.getHours()).padStart(2, '0');
+    const m = String(d.getMinutes()).padStart(2, '0');
+    return `${h}:${m}`;
+  });
+
+  toggleFreeTimeCalculationMode() {
+    this.freeTimeCalculationMode.update(m => m === 'currentTime' ? 'fullDay' : 'currentTime');
+  }
+
+  setFreeTimeCalculationMode(mode: 'currentTime' | 'fullDay') {
+    this.freeTimeCalculationMode.set(mode);
+  }
+
   // Auto-cleanup past events tracking
   autoCleanupEnabled = signal<boolean>(true);
   totalAutoCleanedEvents = signal<number>(0);
@@ -1032,11 +1058,18 @@ export class ProductivityService {
   }
 
   /**
-   * Computes comprehensive free time analysis for a given date,
-   * factoring in regular and recurring events.
+   * Computes comprehensive free time analysis for a given date.
+   * For today, free time is calculated starting from CURRENT TIME through 10:00 PM (or full day if toggled),
+   * providing actionable, real-time availability instead of theoretical past hours.
    */
-  getFreeTimeSummary(dateStr: string): FreeTimeSummary {
+  getFreeTimeSummary(dateStr: string, modeOverride?: 'currentTime' | 'fullDay'): FreeTimeSummary {
+    const calcMode = modeOverride || this.freeTimeCalculationMode();
     const dayEvents = this.events().filter(e => this.isEventOnDate(e, dateStr));
+    const now = this.currentTime();
+    const todayStr = this.getLocalDateString(now);
+    const isToday = dateStr === todayStr;
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    const nowTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
     const parseTimeToMinutes = (t: string): number => {
       if (!t) return 0;
@@ -1089,48 +1122,73 @@ export class ProductivityService {
       }
     }
 
-    // Total busy across 24h
-    let totalBusyMinutes = 0;
-    for (const m of merged) {
-      totalBusyMinutes += (m.end - m.start);
-    }
-    const totalFreeMinutes24h = Math.max(0, 1440 - totalBusyMinutes);
-
     // Active daytime window: 05:00 (300 min / 5 AM) to 22:00 (1320 min / 10 PM) = 1020 minutes (17 hours)
     const WORKDAY_START = 300; // 05:00 (5 AM)
     const WORKDAY_END = 1320;  // 22:00 (10 PM)
     const WORKDAY_TOTAL = WORKDAY_END - WORKDAY_START; // 1020 mins (17 hours)
 
-    const workdayBusyIntervals: { start: number; end: number }[] = [];
+    // Full day 5am-10pm baseline metrics
+    let fullDayBusyMinutes = 0;
     for (const m of merged) {
       const startClamped = Math.max(WORKDAY_START, Math.min(WORKDAY_END, m.start));
       const endClamped = Math.max(WORKDAY_START, Math.min(WORKDAY_END, m.end));
       if (endClamped > startClamped) {
-        workdayBusyIntervals.push({ start: startClamped, end: endClamped });
+        fullDayBusyMinutes += (endClamped - startClamped);
+      }
+    }
+    const fullDayFreeMinutesWorkday = Math.max(0, WORKDAY_TOTAL - fullDayBusyMinutes);
+    const fullDayFreePercentageWorkday = Math.round((fullDayFreeMinutesWorkday / WORKDAY_TOTAL) * 100);
+
+    // Dynamic start calculation:
+    // If today and in 'currentTime' mode, calculate remaining free time starting from NOW!
+    const shouldCalcFromCurrentTime = isToday && calcMode === 'currentTime';
+    let effectiveStart = WORKDAY_START;
+    let timeWindowLabel = '5:00 AM – 10:00 PM';
+
+    if (shouldCalcFromCurrentTime) {
+      effectiveStart = Math.max(WORKDAY_START, Math.min(WORKDAY_END, nowMinutes));
+      timeWindowLabel = nowMinutes >= WORKDAY_END
+        ? 'Daytime Concluded (10:00 PM)'
+        : `${nowTimeStr} – 10:00 PM`;
+    }
+
+    const remainingDaytimeTotalMinutes = Math.max(0, WORKDAY_END - effectiveStart);
+
+    // Active busy intervals within the active calculation window [effectiveStart, WORKDAY_END]
+    const activeBusyIntervals: { start: number; end: number }[] = [];
+    for (const m of merged) {
+      const startClamped = Math.max(effectiveStart, Math.min(WORKDAY_END, m.start));
+      const endClamped = Math.max(effectiveStart, Math.min(WORKDAY_END, m.end));
+      if (endClamped > startClamped) {
+        activeBusyIntervals.push({ start: startClamped, end: endClamped });
       }
     }
 
-    let busyWorkdayMinutes = 0;
-    for (const w of workdayBusyIntervals) {
-      busyWorkdayMinutes += (w.end - w.start);
+    let activeBusyMinutes = 0;
+    for (const b of activeBusyIntervals) {
+      activeBusyMinutes += (b.end - b.start);
     }
-    const totalFreeMinutesWorkday = Math.max(0, WORKDAY_TOTAL - busyWorkdayMinutes);
-    const freePercentageWorkday = Math.round((totalFreeMinutesWorkday / WORKDAY_TOTAL) * 100);
 
-    // Calculate free slots in the active workday window
+    const totalFreeMinutesWorkday = Math.max(0, remainingDaytimeTotalMinutes - activeBusyMinutes);
+    const freePercentageWorkday = remainingDaytimeTotalMinutes > 0
+      ? Math.round((totalFreeMinutesWorkday / remainingDaytimeTotalMinutes) * 100)
+      : (nowMinutes >= WORKDAY_END ? 0 : 100);
+
+    // Calculate free slots in the active window (starting from current time)
     const freeSlots: FreeTimeSlot[] = [];
-    let cursor = WORKDAY_START;
+    let cursor = effectiveStart;
 
-    for (const b of workdayBusyIntervals) {
+    for (const b of activeBusyIntervals) {
       if (b.start > cursor) {
         const dur = b.start - cursor;
-        if (dur >= 15) {
+        if (dur >= 10) {
           freeSlots.push({
             startTime: minutesToTimeString(cursor),
             endTime: minutesToTimeString(b.start),
             durationMinutes: dur,
             durationFormatted: formatMinutesToHuman(dur),
-            isFocusBlock: dur >= 90
+            isFocusBlock: dur >= 90,
+            isCurrent: shouldCalcFromCurrentTime && cursor === effectiveStart && nowMinutes < b.start
           });
         }
       }
@@ -1139,42 +1197,78 @@ export class ProductivityService {
 
     if (cursor < WORKDAY_END) {
       const dur = WORKDAY_END - cursor;
-      if (dur >= 15) {
+      if (dur >= 10) {
         freeSlots.push({
           startTime: minutesToTimeString(cursor),
           endTime: minutesToTimeString(WORKDAY_END),
           durationMinutes: dur,
           durationFormatted: formatMinutesToHuman(dur),
-          isFocusBlock: dur >= 90
+          isFocusBlock: dur >= 90,
+          isCurrent: shouldCalcFromCurrentTime && cursor === effectiveStart
         });
       }
     }
 
+    // 24-hour total
+    let totalBusyMinutes = 0;
+    for (const m of merged) {
+      totalBusyMinutes += (m.end - m.start);
+    }
+    const remaining24hCapacity = shouldCalcFromCurrentTime
+      ? Math.max(0, 1440 - nowMinutes)
+      : 1440;
+    let remaining24hBusy = 0;
+    if (shouldCalcFromCurrentTime) {
+      for (const m of merged) {
+        const s = Math.max(nowMinutes, m.start);
+        const e = Math.min(1440, m.end);
+        if (e > s) remaining24hBusy += (e - s);
+      }
+    } else {
+      remaining24hBusy = totalBusyMinutes;
+    }
+    const totalFreeMinutes24h = Math.max(0, remaining24hCapacity - remaining24hBusy);
+
+    // Status evaluation
     let status: 'open' | 'moderate' | 'busy' = 'open';
     let statusLabel = 'High Availability';
-    if (freePercentageWorkday >= 65) {
+    if (shouldCalcFromCurrentTime && nowMinutes >= WORKDAY_END) {
       status = 'open';
-      statusLabel = dayEvents.length === 0 ? 'Completely Open' : 'High Availability';
+      statusLabel = 'Daytime Concluded (Resumes 5am)';
+    } else if (freePercentageWorkday >= 65) {
+      status = 'open';
+      statusLabel = dayEvents.length === 0
+        ? 'Completely Open'
+        : (shouldCalcFromCurrentTime ? 'High Availability Ahead' : 'High Availability');
     } else if (freePercentageWorkday >= 30) {
       status = 'moderate';
-      statusLabel = 'Moderate Schedule';
+      statusLabel = shouldCalcFromCurrentTime ? 'Moderate Time Left' : 'Moderate Schedule';
     } else {
       status = 'busy';
-      statusLabel = 'Heavily Booked';
+      statusLabel = shouldCalcFromCurrentTime ? 'Heavily Booked Remaining' : 'Heavily Booked';
     }
 
     return {
       dateStr,
-      totalBusyMinutes,
+      isToday,
+      calculatedFromCurrentTime: shouldCalcFromCurrentTime,
+      currentTimeStr: nowTimeStr,
+      totalBusyMinutes: shouldCalcFromCurrentTime ? activeBusyMinutes : fullDayBusyMinutes,
       totalFreeMinutesWorkday,
       freePercentageWorkday,
       totalFreeMinutes24h,
-      busyFormatted: formatMinutesToHuman(totalBusyMinutes),
+      busyFormatted: formatMinutesToHuman(shouldCalcFromCurrentTime ? activeBusyMinutes : fullDayBusyMinutes),
       freeWorkdayFormatted: formatMinutesToHuman(totalFreeMinutesWorkday),
       free24hFormatted: formatMinutesToHuman(totalFreeMinutes24h),
       freeSlots,
       status,
-      statusLabel
+      statusLabel,
+      fullDayFreeMinutesWorkday,
+      fullDayFreeWorkdayFormatted: formatMinutesToHuman(fullDayFreeMinutesWorkday),
+      fullDayFreePercentageWorkday,
+      remainingDaytimeTotalMinutes,
+      remainingDaytimeFormatted: formatMinutesToHuman(remainingDaytimeTotalMinutes),
+      timeWindowLabel
     };
   }
 

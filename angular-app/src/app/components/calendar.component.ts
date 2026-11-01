@@ -121,6 +121,9 @@ export class CalendarComponent {
   getCellFreeText(dateStr: string): string {
     const summary = this.service.getFreeTimeSummary(dateStr);
     const evts = this.getEventsForDate(dateStr);
+    if (dateStr === this.todayStr && summary.calculatedFromCurrentTime) {
+      return `${summary.freeWorkdayFormatted} left`;
+    }
     if (evts.length === 0) {
       return '17h free';
     }
@@ -140,6 +143,9 @@ export class CalendarComponent {
 
   getCellFreeTooltip(dateStr: string): string {
     const summary = this.service.getFreeTimeSummary(dateStr);
+    if (dateStr === this.todayStr && summary.calculatedFromCurrentTime) {
+      return `${summary.freeWorkdayFormatted} free remaining from now (${summary.currentTimeStr}) until 10:00 PM (${summary.freePercentageWorkday}% free, ${summary.busyFormatted} booked remaining)`;
+    }
     return `${summary.freeWorkdayFormatted} free time between 5am and 10pm (${summary.freePercentageWorkday}% free, ${summary.busyFormatted} booked)`;
   }
 

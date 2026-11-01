@@ -26,10 +26,19 @@ import { MealTiming, HealthExpertRecommendation } from '../models/productivity.m
             ⚡
           </div>
           <div>
-            <div class="text-[10px] font-mono text-emerald-800 uppercase font-semibold">Today's Free Time</div>
+            <div class="flex items-center gap-1.5 text-[10px] font-mono text-emerald-800 uppercase font-semibold">
+              <span>{{ todaySummary().calculatedFromCurrentTime ? 'Free Time Remaining' : 'Today\'s Free Time' }}</span>
+              @if (todaySummary().calculatedFromCurrentTime) {
+                <span class="text-[9px] bg-emerald-200/90 text-emerald-950 px-1.5 py-0.2 rounded-full font-bold">
+                  From Now ({{ service.currentTimeFormatted() }})
+                </span>
+              }
+            </div>
             <div class="text-sm font-bold text-emerald-950 font-mono">
               {{ todaySummary().freeWorkdayFormatted }} Free
-              <span class="text-xs font-normal text-emerald-700">({{ todaySummary().freePercentageWorkday }}% open)</span>
+              <span class="text-xs font-normal text-emerald-700">
+                ({{ todaySummary().freePercentageWorkday }}% of {{ todaySummary().calculatedFromCurrentTime ? 'remaining day' : 'active day' }})
+              </span>
             </div>
           </div>
         </div>
@@ -410,8 +419,11 @@ import { MealTiming, HealthExpertRecommendation } from '../models/productivity.m
           <div class="flex items-center justify-between pb-3 border-b border-slate-100">
             <div class="flex items-center gap-2 flex-wrap">
               <h3 class="text-sm font-bold text-slate-900">Today's Events</h3>
-              <span class="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-800 border-emerald-200">
-                {{ todaySummary().freeWorkdayFormatted }} Free
+              <span
+                class="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-800 border-emerald-200"
+                [title]="todaySummary().calculatedFromCurrentTime ? 'Free time remaining from now until 10:00 PM' : 'Full daytime free hours'"
+              >
+                {{ todaySummary().freeWorkdayFormatted }} {{ todaySummary().calculatedFromCurrentTime ? 'Free Ahead' : 'Free' }}
               </span>
               <span
                 class="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full border bg-slate-50 text-slate-600 border-slate-200 flex items-center gap-1 shadow-2xs"

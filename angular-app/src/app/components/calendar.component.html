@@ -1,4 +1,4 @@
-<div class="space-y-6">
+ <div class="space-y-6">
       <!-- Toolbar -->
       <div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
         <div class="flex items-center gap-3">
@@ -64,7 +64,31 @@
             </span>
           </div>
 
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
+            @if (selectedDateStr() === todayStr) {
+              <!-- Calculation Mode Selector -->
+              <div class="flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs font-mono">
+                <button
+                  type="button"
+                  (click)="service.setFreeTimeCalculationMode('currentTime')"
+                  class="px-2.5 py-1 rounded-md transition-all cursor-pointer text-[11px]"
+                  [class]="service.freeTimeCalculationMode() === 'currentTime' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900 font-medium'"
+                  title="Calculates free time remaining from current time ({{ service.currentTimeFormatted() }}) forward"
+                >
+                  ⚡ From Now ({{ service.currentTimeFormatted() }})
+                </button>
+                <button
+                  type="button"
+                  (click)="service.setFreeTimeCalculationMode('fullDay')"
+                  class="px-2.5 py-1 rounded-md transition-all cursor-pointer text-[11px]"
+                  [class]="service.freeTimeCalculationMode() === 'fullDay' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900 font-medium'"
+                  title="Calculates free time across the full 5:00 AM – 10:00 PM day"
+                >
+                  Full Day (5am - 10pm)
+                </button>
+              </div>
+            }
+
             @if (selectedDateStr() !== todayStr) {
               <button
                 type="button"
@@ -147,7 +171,16 @@
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <!-- Card 1: Free Time in Daytime -->
           <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-3.5 flex flex-col justify-between">
-            <div class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Daytime Free Hours (5am - 10pm)</div>
+            <div class="flex items-center justify-between gap-1">
+              <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                {{ selectedDaySummary().calculatedFromCurrentTime ? 'Remaining Daytime Free' : 'Daytime Free Hours (5am - 10pm)' }}
+              </span>
+              @if (selectedDaySummary().calculatedFromCurrentTime) {
+                <span class="text-[9px] font-mono font-bold bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded-full">
+                  From {{ selectedDaySummary().currentTimeStr }}
+                </span>
+              }
+            </div>
             <div class="mt-1 flex items-baseline gap-2">
               <span class="text-2xl font-bold font-mono text-emerald-600 tabular-nums">
                 {{ selectedDaySummary().freeWorkdayFormatted }}
@@ -163,11 +196,26 @@
                 [style.width]="selectedDaySummary().freePercentageWorkday + '%'"
               ></div>
             </div>
+            @if (selectedDaySummary().calculatedFromCurrentTime) {
+              <div class="text-[10px] text-slate-500 font-mono mt-2 flex items-center justify-between border-t border-slate-200/60 pt-1.5">
+                <span>Window: {{ selectedDaySummary().timeWindowLabel }}</span>
+                <span class="text-slate-400">Full Day: {{ selectedDaySummary().fullDayFreeWorkdayFormatted }}</span>
+              </div>
+            }
           </div>
 
           <!-- Card 2: Scheduled Busy Time -->
           <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-3.5 flex flex-col justify-between">
-            <div class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Scheduled Commitment</div>
+            <div class="flex items-center justify-between gap-1">
+              <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                {{ selectedDaySummary().calculatedFromCurrentTime ? 'Commitments Remaining' : 'Scheduled Commitment' }}
+              </span>
+              @if (selectedDaySummary().calculatedFromCurrentTime) {
+                <span class="text-[9px] font-mono font-bold bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded-full">
+                  Ahead
+                </span>
+              }
+            </div>
             <div class="mt-1 flex items-baseline gap-2">
               <span class="text-2xl font-bold font-mono text-slate-800 tabular-nums">
                 {{ selectedDaySummary().busyFormatted }}
@@ -177,18 +225,29 @@
               </span>
             </div>
             <div class="text-[11px] text-slate-400 mt-2 font-mono">
-              {{ selectedDaySummary().totalBusyMinutes }} min busy on this date
+              {{ selectedDaySummary().totalBusyMinutes }} min {{ selectedDaySummary().calculatedFromCurrentTime ? 'busy ahead today' : 'busy on this date' }}
             </div>
           </div>
 
           <!-- Card 3: 24h Total Unscheduled -->
           <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-3.5 flex flex-col justify-between">
-            <div class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">24-Hour Total Free Time</div>
+            <div class="flex items-center justify-between gap-1">
+              <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                {{ selectedDaySummary().calculatedFromCurrentTime ? '24h Remaining Free' : '24-Hour Total Free Time' }}
+              </span>
+              @if (selectedDaySummary().calculatedFromCurrentTime) {
+                <span class="text-[9px] font-mono font-bold bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded-full">
+                  Until Midnight
+                </span>
+              }
+            </div>
             <div class="mt-1 flex items-baseline gap-2">
               <span class="text-2xl font-bold font-mono text-slate-700 tabular-nums">
                 {{ selectedDaySummary().free24hFormatted }}
               </span>
-              <span class="text-xs text-slate-500 font-mono">of 24h total</span>
+              <span class="text-xs text-slate-500 font-mono">
+                {{ selectedDaySummary().calculatedFromCurrentTime ? 'remaining today' : 'of 24h total' }}
+              </span>
             </div>
             <div class="text-[11px] text-slate-400 mt-2 font-mono">
               Includes night hours (10pm - 5am)
@@ -263,15 +322,19 @@
         <div class="pt-2 border-t border-slate-100 space-y-2">
           <div class="flex items-center justify-between">
             <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-              <span>Open Free Windows (5am - 10pm)</span>
+              <span>{{ selectedDaySummary().calculatedFromCurrentTime ? 'Open Free Windows Ahead (From Now)' : 'Open Free Windows (5am - 10pm)' }}</span>
               <span class="text-slate-400 font-normal font-mono">({{ selectedDaySummary().freeSlots.length }} available)</span>
             </h4>
             <span class="text-[11px] text-emerald-700 font-medium">⚡ Focus Windows (90m+) highlighted</span>
           </div>
 
           @if (selectedDaySummary().freeSlots.length === 0) {
-            <div class="text-xs text-rose-600 bg-rose-50 border border-rose-200 rounded-lg p-3">
-              Entire daytime schedule is fully booked with no open gaps over 15 minutes.
+            <div class="text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-lg p-3">
+              @if (selectedDaySummary().calculatedFromCurrentTime && selectedDaySummary().remainingDaytimeTotalMinutes === 0) {
+                Active daytime hours (5:00 AM – 10:00 PM) have concluded for today. Next focus window opens at 5:00 AM tomorrow.
+              } @else {
+                Remaining schedule has no open focus gaps over 10 minutes.
+              }
             </div>
           } @else {
             <div class="flex flex-wrap gap-2">
@@ -287,6 +350,11 @@
                   >
                     {{ slot.durationFormatted }} Free
                   </span>
+                  @if (slot.isCurrent) {
+                    <span class="text-[9px] bg-emerald-200 text-emerald-950 font-bold px-1.5 py-0.2 rounded-full uppercase">
+                      Current
+                    </span>
+                  }
                   @if (slot.isFocusBlock) {
                     <span class="text-[10px] text-emerald-800 uppercase tracking-wider font-bold">
                       Deep Work

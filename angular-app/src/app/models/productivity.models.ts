@@ -111,12 +111,16 @@ export interface FreeTimeSlot {
   durationMinutes: number;
   durationFormatted: string;
   isFocusBlock: boolean; // >= 90 mins
+  isCurrent?: boolean;   // active free slot starting right now
 }
 
 export interface FreeTimeSummary {
   dateStr: string;
+  isToday: boolean;
+  calculatedFromCurrentTime: boolean;
+  currentTimeStr: string;
   totalBusyMinutes: number;
-  totalFreeMinutesWorkday: number; // 05:00 - 22:00 (1020 min active daytime window)
+  totalFreeMinutesWorkday: number; // remaining daytime free minutes from current time (or full day)
   freePercentageWorkday: number;
   totalFreeMinutes24h: number; // 1440 min
   busyFormatted: string;
@@ -125,6 +129,12 @@ export interface FreeTimeSummary {
   freeSlots: FreeTimeSlot[];
   status: 'open' | 'moderate' | 'busy';
   statusLabel: string;
+  fullDayFreeMinutesWorkday: number;
+  fullDayFreeWorkdayFormatted: string;
+  fullDayFreePercentageWorkday: number;
+  remainingDaytimeTotalMinutes: number;
+  remainingDaytimeFormatted: string;
+  timeWindowLabel: string;
 }
 
 export interface NextEventInfo {
