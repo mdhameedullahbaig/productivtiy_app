@@ -1353,6 +1353,25 @@ export class ProductivityService {
     await this.db.saveDailyStats(this.stats());
   }
 
+  async logFocusMinutes(minutes: number) {
+    if (minutes <= 0) return;
+    this.stats.update(st => ({
+      ...st,
+      focusMinutesToday: st.focusMinutesToday + minutes
+    }));
+    this.saveToStorage(this.STORAGE_STATS, this.stats());
+    await this.db.saveDailyStats(this.stats());
+  }
+
+  async logBreakCompleted() {
+    this.stats.update(st => ({
+      ...st,
+      breaksCompletedToday: st.breaksCompletedToday + 1
+    }));
+    this.saveToStorage(this.STORAGE_STATS, this.stats());
+    await this.db.saveDailyStats(this.stats());
+  }
+
   async logHydration() {
     this.stats.update(st => ({ ...st, waterGlasses: st.waterGlasses + 1 }));
     this.saveToStorage(this.STORAGE_STATS, this.stats());

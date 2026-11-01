@@ -61,9 +61,9 @@ import { ViewTab } from '../models/productivity.models';
             [class.bg-slate-100]="service.currentTab() === 'breaks'"
             [class.text-slate-900]="service.currentTab() === 'breaks'"
             [class.font-semibold]="service.currentTab() === 'breaks'"
-            class="px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors whitespace-nowrap cursor-pointer"
+            class="px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5"
           >
-            Quick Breaks
+            <span>🎯 Focus & Breaks</span>
           </button>
 
           <button

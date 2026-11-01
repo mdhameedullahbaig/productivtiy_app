@@ -750,12 +750,12 @@ import { MealTiming, HealthExpertRecommendation } from '../models/productivity.m
       <section class="bg-indigo-50/80 border border-indigo-200/80 rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
         <div class="flex items-center gap-3.5">
           <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs text-lg">
-            ☕
+            🎯
           </div>
           <div>
-            <h4 class="text-sm font-bold text-indigo-950">Feeling Mental Friction or Eye Strain?</h4>
+            <h4 class="text-sm font-bold text-indigo-950">Focus Protocols & Biological Checkpoints</h4>
             <p class="text-xs text-indigo-700 mt-0.5">
-              Take a 20-second eye reset, a guided 2-minute desk stretch, or start a 25m Pomodoro focus sprint.
+              Launch 15m, 25m, 50m, or 90m Ultradian flow sessions with real-time 20-20-20 eye reset and cellular hydration prompts.
             </p>
           </div>
         </div>
@@ -765,7 +765,7 @@ import { MealTiming, HealthExpertRecommendation } from '../models/productivity.m
           (click)="service.setTab('breaks')"
           class="px-4 py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-lg transition-colors cursor-pointer shadow-xs whitespace-nowrap self-start sm:self-auto"
         >
-          Open Quick Breaks →
+          Open Focus & Breaks →
         </button>
       </section>
     </div>

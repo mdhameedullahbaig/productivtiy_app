@@ -1,6 +1,5 @@
 import { Component, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { ProductivityService } from '../services/productivity.service';
 import { AudioService } from '../services/audio.service';
 import { Quote, QuoteCategory } from '../models/productivity.models';
@@ -10,7 +9,7 @@ type FilterCategory = 'All' | 'Discipline' | 'Time Mastery' | 'Focus' | 'Habits'
 @Component({
   selector: 'app-quotes',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule],
   template: `
     <div class="space-y-6">
       <!-- Header Banner & Quick Insights -->
@@ -169,8 +168,8 @@ type FilterCategory = 'All' | 'Discipline' | 'Time Mastery' | 'Focus' | 'Habits'
           <div class="relative w-full lg:w-72">
             <input
               type="text"
-              [ngModel]="searchQuery()"
-              (ngModelChange)="searchQuery.set($event)"
+              [value]="searchQuery()"
+              (input)="onSearchInput($event)"
               placeholder="Search quotes or authors..."
               class="w-full pl-9 pr-8 py-2 text-xs rounded-xl border border-slate-300 bg-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             />
@@ -364,6 +363,10 @@ export class QuotesComponent {
       this.service.currentQuoteIndex.set(idx);
       this.service.quoteRotationSecondsLeft.set(60);
     }
+  }
+
+  onSearchInput(event: Event) {
+    this.searchQuery.set((event.target as HTMLInputElement).value);
   }
 
   clearFilters() {
